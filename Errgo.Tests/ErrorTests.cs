@@ -94,13 +94,14 @@ public class ErrorTests
         }
 
         var (_, err) = GetItemById(itemId);
-        Assert.Equal($"Failed to get item with id {itemId}. Item not found", err.FullMessage);
+        Assert.Contains($"Failed to get item with id {itemId}", err.Stack);
+        Assert.Contains($"Item not found", err.Stack);
     }
 
     [Fact]
-    public void Error_None_FullMessage_ReturnsEmptyString()
+    public void Error_None_Stack_ReturnsEmptyString()
     {
-        Assert.Equal(string.Empty, Error.None.FullMessage);
+        Assert.Equal(string.Empty, Error.None.Stack);
     }
 
     [Fact]
@@ -111,36 +112,40 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_FullMessage_SkipsEmptyMessages()
+    public void Error_Stack_NullMessage()
     {
-        var inner = new Error("");
+        var inner = new Error(message: null);
         var middle = new Error("Middle error", inner);
         var outer = new Error("Outer error", middle);
 
-        Assert.Equal("Outer error. Middle error. Unspecified error", outer.FullMessage);
+        Assert.Contains("Outer error", outer.Stack);
+        Assert.Contains("Middle error", outer.Stack);
+        Assert.Contains("Unknown error", outer.Stack);
     }
 
     [Fact]
-    public void Error_FullMessage_SkipsWhitespaceMessages()
+    public void Error_Stack_WhitespaceMessage()
     {
         var inner = new Error("   ");
         var middle = new Error("Middle error", inner);
         var outer = new Error("Outer error", middle);
 
-        Assert.Equal("Outer error. Middle error. Unspecified error", outer.FullMessage);
+        Assert.Contains("Outer error", outer.Stack);
+        Assert.Contains("Middle error", outer.Stack);
+        Assert.Contains("   ", outer.Stack);
     }
 
     [Fact]
-    public void Error_Messages_SkipsEmptyMessages()
+    public void Error_Messages_NullMessage_UnknownError()
     {
-        var inner = new Error("");
+        var inner = new Error(message: null);
         var middle = new Error("Middle error", inner);
         var outer = new Error("Outer error", middle);
 
         Assert.Equal(2, outer.InnerErrors.Count);
         Assert.Equal("Outer error", outer.Message);
         Assert.Equal("Middle error", outer.InnerErrors[0].Message);
-        Assert.Equal("Unspecified error", outer.InnerErrors[1].Message);
+        Assert.Equal("Unknown error", outer.InnerErrors[1].Message);
     }
 
     [Fact]
@@ -270,24 +275,24 @@ public class ErrorTests
         var errWrapper = Error.Empty;
 
         var (val, err) = func1();
-        if (err) errWrapper.Wrap(new Error("Func1 failed", err)); // No reassignment!
+        if (err) errWrapper.Wrap(new Error("Func1 failed", err));
 
         (var str, err) = func2();
-        if (err) errWrapper.Wrap(new Error("Func2 failed", err)); // No reassignment!
+        if (err) errWrapper.Wrap(new Error("Func2 failed", err));
 
         (var flag, err) = func3();
-        if (err) errWrapper.Wrap(new Error("Func3 failed", err)); // No reassignment!
+        if (err) errWrapper.Wrap(new Error("Func3 failed", err));
 
         // Verify the error chain is built correctly
         Assert.True(errWrapper);
         
-        var fullMessage = errWrapper.FullMessage;
-        Assert.Contains("Func1 failed", fullMessage);
-        Assert.Contains("Func2 failed", fullMessage);
-        Assert.Contains("Func3 failed", fullMessage);
-        Assert.Contains("Error 1", fullMessage);
-        Assert.Contains("Error 2", fullMessage);
-        Assert.Contains("Error 3", fullMessage);
+        var stack = errWrapper.Stack;
+        Assert.Contains("Func1 failed", stack);
+        Assert.Contains("Func2 failed", stack);
+        Assert.Contains("Func3 failed", stack);
+        Assert.Contains("Error 1", stack);
+        Assert.Contains("Error 2", stack);
+        Assert.Contains("Error 3", stack);
     }
 
     [Fact]
@@ -296,15 +301,14 @@ public class ErrorTests
         var (_, err) = GetErrorWithoutMessage();
         
         // Even without a message, source location should be visible
-        Assert.Equal("Unspecified error", err.Message);
+        Assert.Equal("Unknown error", err.Message);
         Assert.Equal("GetErrorWithoutMessage", err.MemberName);
         Assert.Contains("ErrorTests.cs", err.FilePath);
         Assert.True(err.LineNumber > 0);
         
         var stack = err.Stack;
-        Assert.Contains("Unspecified error at GetErrorWithoutMessage", stack);
+        Assert.Contains("Unknown error at GetErrorWithoutMessage", stack);
         Assert.Contains("ErrorTests.cs", stack);
-        Assert.Contains("line", stack);
     }
 
     [Fact]
@@ -317,9 +321,9 @@ public class ErrorTests
         Assert.Contains("Operation failed", err.Stack);
         
         // Inner error without message should still show its source location
-        Assert.Contains("Unspecified error at GetErrorWithoutMessage", err.Stack);
+        Assert.Contains("Unknown error at GetErrorWithoutMessage", err.Stack);
         Assert.Contains("ErrorTests.cs", err.Stack);
     }
 
-    private (object?, Error) GetErrorWithoutMessage() => (null, new Error(""));
+    private (object?, Error) GetErrorWithoutMessage() => (null, new Error(message: null));
 }

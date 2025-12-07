@@ -4,7 +4,7 @@ namespace Errgo;
 
 public readonly record struct Error
 {
-    private readonly bool _hasError { get; }
+    private readonly bool _hasError;
     private readonly ErrorChain? _errorChain;
     private readonly ErrorInfo _info;
 
@@ -13,18 +13,18 @@ public readonly record struct Error
     /// </summary>
     public Error()
     {
-        _info = new ErrorInfo("Unspecified error", string.Empty, string.Empty, 0);
+        _info = new ErrorInfo("Unknown error", string.Empty, string.Empty, 0);
         _hasError = true;
         _errorChain = null;
     }
 
     public Error(
-        string message = "",
+        string? message = null,
         [CallerMemberName] string memberName = "",
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-        if (string.IsNullOrWhiteSpace(message)) message = "Unspecified error";
+        message ??= "Unknown error";
         _info = new ErrorInfo(message, memberName, filePath, lineNumber);
         _hasError = true;
         _errorChain = null;
@@ -37,7 +37,7 @@ public readonly record struct Error
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-        if (string.IsNullOrWhiteSpace(message)) message = "Unspecified error";
+        message ??= "Unknown error";
         _info = new ErrorInfo(message, memberName, filePath, lineNumber);
         _hasError = true;
 
@@ -61,12 +61,17 @@ public readonly record struct Error
     /// <summary>
     /// Instantiates a new Error with no messages or inner errors.
     /// </summary>
-    public static Error Empty => new();
+    public static Error Empty => new("", "", "", 0);
 
     /// <summary>
-    /// Gets the error message text.
+    /// Gets the error message.
     /// </summary>
-    public string Message => _info.Message ?? string.Empty;
+    public string Message => _info.Message;
+
+    /// <summary>
+    /// Gets the error message, with details about the source location info.
+    /// </summary>
+    public string Details => this.ToString();
 
     /// <summary>
     /// Gets the member (e.g. method or property) where the error occurred.
@@ -84,29 +89,7 @@ public readonly record struct Error
     public int LineNumber => _info.LineNumber;
 
     /// <summary>
-    /// Gets the full error chain as a single message (without source location info).
-    /// </summary>
-    public string FullMessage
-    {
-        get
-        {
-            var messages = new List<string>();
-            
-            // Add current error message first
-            if (!string.IsNullOrWhiteSpace(_info.Message))
-            {
-                messages.Add(_info.Message);
-            }
-            
-            // Add inner error messages
-            messages.AddRange(InnerErrors.Select(e => e.Message));
-            
-            return string.Join(". ", messages);
-        }
-    }
-
-    /// <summary>
-    /// Gets the full error chain as a single message with source information.
+    /// Gets the full error chain as a single message with source location info.
     /// </summary>
     public string Stack
     {
@@ -114,14 +97,12 @@ public readonly record struct Error
         {
             var lines = new List<string>
             {
-                // Add current error with source info first
                 this.ToString()
             };
             
-            // Add inner errors with their source info
             lines.AddRange(InnerErrors.Select(e => e.ToString()));
             
-            return string.Join(Environment.NewLine, lines);
+            return string.Join(Environment.NewLine, lines.Where(l => !string.IsNullOrWhiteSpace(l)));
         }
     }
 
@@ -134,7 +115,8 @@ public readonly record struct Error
     /// <summary>
     /// Returns a string representation of the error with source location information.
     /// </summary>
-    /// <returns>A string containing the error message and/or source location information. Returns an empty string only for Error.None.</returns>
+    /// <returns>A string containing the error message and/or source location information. 
+    /// Returns an empty string for Error.None.</returns>
     public override string ToString()
     {
         // Error.None should return empty string
@@ -149,7 +131,9 @@ public readonly record struct Error
         if (!hasMemberName)
             return _info.Message;
 
-        var fileName = hasFilePath ? Path.GetFileName(_info.FilePath) : string.Empty;
+        var fileName = hasFilePath 
+            ? Path.GetFileName(_info.FilePath) 
+            : string.Empty;
 
         // Message with source info
         if (!string.IsNullOrWhiteSpace(fileName) && hasLineNumber)
