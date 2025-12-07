@@ -1,11 +1,9 @@
-﻿using Errgo;
-
-namespace Errgo.Tests;
+﻿namespace Errgo.Tests;
 
 public class ErrorTests
 {
     [Fact]
-    public void Errors_WithIdenticalMemberValues_AreEqual()
+    public void Error_IdenticalMemberValues_AreEqual()
     {
         Error err1 = new("error");
         Error err2 = new("error");
@@ -15,7 +13,7 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Errors_None_AreEqual()
+    public void Error_None_AreEqual()
     {
         Error err = Error.None;
         Assert.Equal(err, Error.None);
@@ -34,12 +32,10 @@ public class ErrorTests
     [Fact]
     public void Error_From_WithExpression()
     {
-        Error err1 = new("error");
-        // Can't use with expression on Message anymore since it's readonly
-        // Create a new error instead
-        Error err2 = new("different error");
-        Assert.True(err2);
-        Assert.NotEqual(err1, err2);
+        Error err = new Error("error");
+        // Record structs support 'with' expressions
+        var err2 = err with { };
+        Assert.True(err);
     }
 
     [Fact]
@@ -62,11 +58,11 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_Sentinel_ValueEquality()
+    public void Error_SentinelError_ValueEquality()
     {
-        (object?, Error) GetItemById(int id)
+        static (object?, Error) GetItemById(int id)
         {
-            return (default, SentinelErrors.NotFound);
+            return (null, SentinelErrors.NotFound);
         }
 
         var (item, err) = GetItemById(123);
@@ -77,14 +73,27 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_Chaining()
+    public void Error_SentinelError_ChainingConstructor()
     {
         var err = new Error($"Some error happened", SentinelErrors.NotFound);
         Assert.True(err);
+        Assert.Contains("Some error happened", err.Stack);
+        Assert.Contains("Item not found", err.Stack);
     }
 
     [Fact]
-    public void Error_Chaining_MessagesAreChained()
+    public void Error_SentinelError_ChainingWrap()
+    {
+        var err = new Error($"Some error happened", SentinelErrors.NotFound);
+        var wrapper = Error.Empty;
+        wrapper.Wrap(err);
+        Assert.True(wrapper);
+        Assert.Contains("Some error happened", wrapper.Stack);
+        Assert.Contains("Item not found", wrapper.Stack);
+    }
+
+    [Fact]
+    public void Error_SentinelError_ChainingConstructor2()
     {
         var itemId = 123;
 
@@ -99,13 +108,13 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_None_Stack_ReturnsEmptyString()
+    public void Error_None_StackReturnsEmptyString()
     {
         Assert.Equal(string.Empty, Error.None.Stack);
     }
 
     [Fact]
-    public void Error_None_Messages_ReturnsEmptyList()
+    public void Error_None_InnerErrorsReturnsEmptyList()
     {
         var errors = Error.None.InnerErrors;
         Assert.Empty(errors);
@@ -136,7 +145,7 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_Messages_NullMessage_UnknownError()
+    public void Error_Message_NullMessageReturnsUnknownError()
     {
         var inner = new Error(message: null);
         var middle = new Error("Middle error", inner);
@@ -149,7 +158,7 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_Is_WithNoneTarget_ReturnsFalse()
+    public void Error_Is_WithErrorNoneReturnsFalse()
     {
         var err = new Error("Some error");
         Assert.False(err.Is(Error.None));
@@ -177,14 +186,14 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_None_Is_WithAnyTarget_ReturnsFalse()
+    public void Error_Is_WithAnyTargetReturnsFalse()
     {
         Assert.False(Error.None.Is(SentinelErrors.NotFound));
         Assert.False(Error.None.Is(new Error("Some error")));
     }
 
     [Fact]
-    public void Error_None_Is_ErrorNone_ReturnsTrue()
+    public void Error_Is_ErrorNoneReturnsTrue()
     {
         var err = Error.None;
         Assert.True(err.Is(Error.None));
@@ -235,7 +244,7 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_None_As_WithAnyTarget_ReturnsFalse()
+    public void Error_As_WithAnyTargetReturnsFalse()
     {
         Assert.False(Error.None.As(SentinelErrors.NotFound, out var match));
         Assert.Equal(Error.None, match);
@@ -266,7 +275,7 @@ public class ErrorTests
     private (string Value, Error err) DoStuff() => (string.Empty, new Error("Database connection failed"));
 
     [Fact]
-    public void Error_CanChainErrors()
+    public void Error_Wrap_CanChainErrors()
     {
         Func<(int, Error)> func1 = () => (default, new Error("Error 1"));
         Func<(string?, Error)> func2 = () => (default, new Error("Error 2"));

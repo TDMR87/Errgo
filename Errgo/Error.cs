@@ -8,12 +8,9 @@ public readonly record struct Error
     private readonly ErrorChain? _errorChain;
     private readonly ErrorInfo _info;
 
-    /// <summary>
-    /// The default constructor creates an Error with no error (Error.None).
-    /// </summary>
     public Error()
     {
-        _info = new ErrorInfo("Unknown error", string.Empty, string.Empty, 0);
+        _info = new ErrorInfo(Constants.UnknownError, string.Empty, string.Empty, 0);
         _hasError = true;
         _errorChain = null;
     }
@@ -24,7 +21,7 @@ public readonly record struct Error
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-        message ??= "Unknown error";
+        message ??= Constants.UnknownError;
         _info = new ErrorInfo(message, memberName, filePath, lineNumber);
         _hasError = true;
         _errorChain = null;
@@ -37,7 +34,7 @@ public readonly record struct Error
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-        message ??= "Unknown error";
+        message ??= Constants.UnknownError;
         _info = new ErrorInfo(message, memberName, filePath, lineNumber);
         _hasError = true;
 
@@ -47,7 +44,7 @@ public readonly record struct Error
             return;
         }
 
-        // Create a chain with just the inner error
+        // Create an error chain with just the inner error
         // The current error's info is stored in _info, not duplicated in the chain
         _errorChain = new ErrorChain();
         _errorChain.Append(error);
@@ -120,22 +117,19 @@ public readonly record struct Error
     public override string ToString()
     {
         // Error.None should return empty string
-        if (this == Error.None)
-            return string.Empty;
+        if (this == Error.None) return string.Empty;
 
         var hasMemberName = !string.IsNullOrWhiteSpace(_info.MemberName);
         var hasFilePath = !string.IsNullOrWhiteSpace(_info.FilePath);
         var hasLineNumber = _info.LineNumber > 0;
 
         // If no source info, just return the message
-        if (!hasMemberName)
-            return _info.Message;
+        if (!hasMemberName) return _info.Message;
 
         var fileName = hasFilePath 
             ? Path.GetFileName(_info.FilePath) 
             : string.Empty;
 
-        // Message with source info
         if (!string.IsNullOrWhiteSpace(fileName) && hasLineNumber)
             return $"{_info.Message} at {_info.MemberName} in {fileName} (line {_info.LineNumber})";
 
@@ -203,17 +197,15 @@ public readonly record struct Error
         if (this == Error.None) return false;
         if (target == Error.None) return false;
 
-        // Check this error (compare only message, not source location)
-        if (_info.Message.Equals(target._info.Message, StringComparison.Ordinal))
-            return true;
+        // Check this error
+        if (_info.Message.Equals(target._info.Message, StringComparison.Ordinal)) return true;
 
-        // Check errors in the chain recursively
+        // Check errors in the error chain recursively
         if (_errorChain != null)
         {
             foreach (var error in _errorChain.Errors)
             {
-                if (error.Is(target)) // Recursive check
-                    return true;
+                if (error.Is(target)) return true;
             }
         }
 
@@ -251,8 +243,7 @@ public readonly record struct Error
         {
             foreach (var error in _errorChain.Errors)
             {
-                if (error.As(target, out match)) // Recursive check
-                    return true;
+                if (error.As(target, out match)) return true;
             }
         }
 

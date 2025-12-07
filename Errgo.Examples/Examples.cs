@@ -6,17 +6,11 @@ public class Examples
 {
     public async Task<(GameSession?, Error)> CreateGameSession(CancellationToken cancellationToken = default)
     {
-        var (hash, _) = await GenerateUniqueGameSessionHash();
-        //if (err)
-        //{
-        //    return (null, err);
-        //}
+        var (hash, err) = await GenerateUniqueGameSessionHash();
+        if (err) return (null, err);
 
-        (var gameSession, var err) = await AddGameSession(hash, cancellationToken);
-        //if (err)
-        //{
-        //    return (null, err);
-        //}
+        (var gameSession, err) = await AddGameSession(hash, cancellationToken);
+        if (err) return (null, err);
 
         return (gameSession, Error.None);
     }
@@ -49,10 +43,7 @@ public class Examples
             var hash = new string(hashChars);
 
             var (isUnique, err) = await IsHashUnique(hash);
-            if (err || !isUnique)
-            {
-                return (string.Empty, err);
-            }
+            if (err || !isUnique) return (string.Empty, err);
 
             return (hash, Error.None);
         }

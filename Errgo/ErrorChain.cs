@@ -7,7 +7,7 @@
 /// </summary>
 internal sealed class ErrorChain
 {
-    private readonly List<Error> _errors = [];
+    private readonly List<Error> _errors = new List<Error>();
     
     public IReadOnlyList<Error> Errors => _errors;
     

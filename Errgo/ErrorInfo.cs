@@ -3,29 +3,29 @@ using System.Runtime.CompilerServices;
 namespace Errgo;
 
 /// <summary>
-/// Represents error information with source location details.
+/// Represents error information e.g. message and source location details.
 /// </summary>
-internal readonly record struct ErrorInfo
+internal readonly struct ErrorInfo
 {
     /// <summary>
     /// The error message text.
     /// </summary>
-    public string Message { get; init; }
+    public readonly string Message;
 
     /// <summary>
     /// The member (method/property) where the error occurred.
     /// </summary>
-    public string MemberName { get; init; }
+    public readonly string MemberName;
 
     /// <summary>
     /// The source file where the error occurred.
     /// </summary>
-    public string FilePath { get; init; }
+    public readonly string FilePath;
 
     /// <summary>
     /// The line number where the error occurred.
     /// </summary>
-    public int LineNumber { get; init; }
+    public readonly int LineNumber;
 
     public ErrorInfo(
         string message,
@@ -66,7 +66,7 @@ internal readonly record struct ErrorInfo
     /// <summary>
     /// Implicit conversion from string to ErrorInfo.
     /// </summary>
-    public static implicit operator ErrorInfo(string message) => new(message);
+    public static implicit operator ErrorInfo(string message) => new ErrorInfo(message);
 
     /// <summary>
     /// Implicit conversion from ErrorInfo to string (returns just the message text).
