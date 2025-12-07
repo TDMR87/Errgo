@@ -8,6 +8,13 @@ public readonly record struct Error
     private readonly ErrorChain? _errorChain;
     private readonly ErrorInfo _info;
 
+    /// <summary>
+    /// Creates an error with an unknown error message.
+    /// </summary>
+    /// <remarks>
+    /// Source location information (member name, file path, and line number) is automatically 
+    /// captured by the compiler and typically does not need to be provided by users.
+    /// </remarks>
     public Error()
     {
         _info = new ErrorInfo(Constants.UnknownError, string.Empty, string.Empty, 0);
@@ -15,6 +22,18 @@ public readonly record struct Error
         _errorChain = null;
     }
 
+    /// <summary>
+    /// Creates an error with the specified message.
+    /// </summary>
+    /// <param name="message">The error message. If null or empty, defaults to "Unknown error".</param>
+    /// <param name="memberName">The member name where the error occurred. Automatically filled by the compiler.</param>
+    /// <param name="filePath">The source file path where the error occurred. Automatically filled by the compiler.</param>
+    /// <param name="lineNumber">The line number where the error occurred. Automatically filled by the compiler.</param>
+    /// <remarks>
+    /// The optional parameters for source location (memberName, filePath, lineNumber) are automatically 
+    /// captured by the compiler using caller information attributes and should not be manually provided 
+    /// in typical usage.
+    /// </remarks>
     public Error(
         string? message = null,
         [CallerMemberName] string memberName = "",
@@ -27,6 +46,20 @@ public readonly record struct Error
         _errorChain = null;
     }
 
+    /// <summary>
+    /// Creates an error with the specified message and wraps an inner error, forming an error chain.
+    /// </summary>
+    /// <param name="message">The error message for this error. If null or empty, defaults to "Unknown error".</param>
+    /// <param name="error">The inner error to wrap in the chain.</param>
+    /// <param name="memberName">The member name where the error occurred. Automatically filled by the compiler.</param>
+    /// <param name="filePath">The source file path where the error occurred. Automatically filled by the compiler.</param>
+    /// <param name="lineNumber">The line number where the error occurred. Automatically filled by the compiler.</param>
+    /// <remarks>
+    /// This constructor creates an error chain where the current error wraps the provided inner error.
+    /// The optional parameters for source location (memberName, filePath, lineNumber) are automatically 
+    /// captured by the compiler using caller information attributes and should not be manually provided 
+    /// in typical usage.
+    /// </remarks>
     public Error(
         string message,
         Error error,
@@ -38,7 +71,7 @@ public readonly record struct Error
         _info = new ErrorInfo(message, memberName, filePath, lineNumber);
         _hasError = true;
 
-        if (error == Error.None)
+        if (!error._hasError)
         {
             _errorChain = null;
             return;
@@ -117,7 +150,7 @@ public readonly record struct Error
     public override string ToString()
     {
         // Error.None should return empty string
-        if (this == Error.None) return string.Empty;
+        if (!_hasError) return string.Empty;
 
         var hasMemberName = !string.IsNullOrWhiteSpace(_info.MemberName);
         var hasFilePath = !string.IsNullOrWhiteSpace(_info.FilePath);
@@ -148,12 +181,9 @@ public readonly record struct Error
         {
             var errors = new List<Error>();
             
-            if (this == None) return errors;
+            if (!_hasError) return errors;
 
-            if (_errorChain != null)
-            {
-                CollectErrors(_errorChain.Errors, errors);
-            }
+            if (_errorChain != null) CollectErrors(_errorChain.Errors, errors);
 
             return errors;
         }
@@ -170,19 +200,15 @@ public readonly record struct Error
     {
         foreach (var error in errors)
         {
-            // Add this error (it contains the message/info for this level)
             collection.Add(error);
             
-            // If this error has a nested chain, recursively collect from it
-            if (error._errorChain != null)
-            {
-                CollectErrors(error._errorChain.Errors, collection);
-            }
+            // If this error has an error chain, recursively collect them
+            if (error._errorChain != null) CollectErrors(error._errorChain.Errors, collection);
         }
     }
 
     /// <summary>
-    /// Checks if this error or any error in its chain matches the target error based on Error message.
+    /// Checks if this error or any error in its chain matches the target error.
     /// </summary>
     /// <remarks>
     /// This comparison only considers the error message text, ignoring source location information
@@ -193,27 +219,23 @@ public readonly record struct Error
     /// <returns>True if this error or any wrapped error has the same message as the target; otherwise, false</returns>
     public bool Is(Error target)
     {
-        if (this == Error.None && target == Error.None) return true;
-        if (this == Error.None) return false;
-        if (target == Error.None) return false;
+        if (!this._hasError && !target._hasError) return true;
+        if (!this._hasError || !target._hasError) return false;
 
         // Check this error
         if (_info.Message.Equals(target._info.Message, StringComparison.Ordinal)) return true;
 
         // Check errors in the error chain recursively
-        if (_errorChain != null)
+        foreach (var error in _errorChain?.Errors ?? Enumerable.Empty<Error>())
         {
-            foreach (var error in _errorChain.Errors)
-            {
-                if (error.Is(target)) return true;
-            }
+            if (error.Is(target)) return true;
         }
 
         return false;
     }
 
     /// <summary>
-    /// Attempts to find an error in the chain that matches the target error based on message text.
+    /// Attempts to find an error in the error chain that matches the target error.
     /// </summary>
     /// <remarks>
     /// This method searches through the error chain for an error with the same message as the target.
@@ -228,17 +250,17 @@ public readonly record struct Error
     {
         match = Error.None;
 
-        if (this == Error.None) return false;
-        if (target == Error.None) return false;
+        if (!this._hasError) return false;
+        if (!target._hasError) return false;
 
-        // Check this error (compare only message, not source location)
+        // Check this error (compare only message)
         if (_info.Message.Equals(target._info.Message, StringComparison.Ordinal))
         {
             match = this;
             return true;
         }
 
-        // Check errors in the chain recursively
+        // Check other errors in the chain
         if (_errorChain != null)
         {
             foreach (var error in _errorChain.Errors)
@@ -252,14 +274,13 @@ public readonly record struct Error
 
     /// <summary>
     /// Wraps errors into the error chain.
-    /// Most recent errors are prepended to maintain Go-style ordering (newest first).
+    /// Most recent errors are placed first.
     /// </summary>
     /// <param name="errors">Errors to add to the chain</param>
     public void Wrap(params Error[] errors)
     {
         if (errors == null || errors.Length == 0) return;
 
-        // Get or create chain (using Unsafe to bypass readonly)
         var chain = _errorChain;
         if (chain == null)
         {
@@ -278,11 +299,7 @@ public readonly record struct Error
         for (int i = errors.Length - 1; i >= 0; i--)
         {
             var error = errors[i];
-            if (error != Error.None)
-            {
-                // Prepend the complete error (with its chain intact)
-                chain.Prepend(error);
-            }
+            if (error._hasError) chain.Prepend(error);
         }
     }
 
@@ -297,9 +314,11 @@ public readonly record struct Error
     /// <returns>true if both errors have the same error state and, if present, identical message text; otherwise, false.</returns>
     public bool Equals(Error other)
     {
-        if (_hasError != other._hasError) return false;
-        if (!_hasError && !other._hasError) return true;
-        return _info.Message == other._info.Message;
+        if (!this._hasError && !other._hasError) return true;
+        if (!this._hasError || !other._hasError) return false;
+
+        return (_hasError == true && other._hasError == true) && 
+               (_info.Message.Equals(other._info.Message, StringComparison.Ordinal));
     }
 
     /// <summary>

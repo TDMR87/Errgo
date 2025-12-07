@@ -218,7 +218,7 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_As_DoesNotFindErrorNotInChain()
+    public void Error_As_DoesNotFindErrorInChain()
     {
         var differentError = new Error("Different error");
         var err = new Error("Some error", SentinelErrors.NotFound);
