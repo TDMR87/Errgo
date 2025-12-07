@@ -55,11 +55,11 @@ public class Examples
     {
         // ... code to check if the hash is unique in the database ...
         await Task.Delay(20);
-        return (false, Errors.HashNotUniqueError);
+        return (false, Errors.HashNotUnique);
     }
 }
 
 public static class Errors
 {
-    public static Error HashNotUniqueError = new("Hash already exists");
+    public static Error HashNotUnique = new("Hash already exists");
 }

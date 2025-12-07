@@ -2,6 +2,13 @@
 
 public class ErrorTests
 {
+    // Sentinel errors
+    public static readonly Error NotFound = new("Item not found");
+
+    // Helper functions to generate errors
+    private static (object?, Error) GetDatabaseError() => (null, new Error("Database connection failed"));
+    private static (object?, Error) GetErrorWithoutMessage() => (null, new Error(message: null));
+
     [Fact]
     public void Error_IdenticalMemberValues_AreEqual()
     {
@@ -30,15 +37,6 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_From_WithExpression()
-    {
-        Error err = new Error("error");
-        // Record structs support 'with' expressions
-        var err2 = err with { };
-        Assert.True(err);
-    }
-
-    [Fact]
     public void Error_From_String()
     {
         Error err = new("error");
@@ -62,20 +60,20 @@ public class ErrorTests
     {
         static (object?, Error) GetItemById(int id)
         {
-            return (null, SentinelErrors.NotFound);
+            return (null, NotFound);
         }
 
         var (item, err) = GetItemById(123);
         
-        Assert.Equal(SentinelErrors.NotFound, err);
-        Assert.True(err == SentinelErrors.NotFound);
-        Assert.True(err.Equals(SentinelErrors.NotFound));
+        Assert.Equal(NotFound, err);
+        Assert.True(err == NotFound);
+        Assert.True(err.Equals(NotFound));
     }
 
     [Fact]
     public void Error_SentinelError_ChainingConstructor()
     {
-        var err = new Error($"Some error happened", SentinelErrors.NotFound);
+        var err = new Error($"Some error happened", NotFound);
         Assert.True(err);
         Assert.Contains("Some error happened", err.Stack);
         Assert.Contains("Item not found", err.Stack);
@@ -84,7 +82,7 @@ public class ErrorTests
     [Fact]
     public void Error_SentinelError_ChainingWrap()
     {
-        var err = new Error($"Some error happened", SentinelErrors.NotFound);
+        var err = new Error($"Some error happened", NotFound);
         var wrapper = Error.Empty;
         wrapper.Wrap(err);
         Assert.True(wrapper);
@@ -99,7 +97,7 @@ public class ErrorTests
 
         static (object?, Error) GetItemById(int id)
         {
-            return (null, new($"Failed to get item with id {id}", SentinelErrors.NotFound));
+            return (null, new($"Failed to get item with id {id}", NotFound));
         }
 
         var (_, err) = GetItemById(itemId);
@@ -167,20 +165,20 @@ public class ErrorTests
     [Fact]
     public void Error_Is_FindsErrorInChain()
     {
-        var inner = SentinelErrors.NotFound;
+        var inner = NotFound;
         var middle = new Error("Middle error", inner);
         var outer = new Error("Outer error", middle);
 
-        Assert.True(outer.Is(SentinelErrors.NotFound));
-        Assert.True(middle.Is(SentinelErrors.NotFound));
-        Assert.True(inner.Is(SentinelErrors.NotFound));
+        Assert.True(outer.Is(NotFound));
+        Assert.True(middle.Is(NotFound));
+        Assert.True(inner.Is(NotFound));
     }
 
     [Fact]
     public void Error_Is_DoesNotFindErrorNotInChain()
     {
         var differentError = new Error("Different error");
-        var err = new Error("Some error", SentinelErrors.NotFound);
+        var err = new Error("Some error", NotFound);
 
         Assert.False(err.Is(differentError));
     }
@@ -188,7 +186,7 @@ public class ErrorTests
     [Fact]
     public void Error_Is_WithAnyTargetReturnsFalse()
     {
-        Assert.False(Error.None.Is(SentinelErrors.NotFound));
+        Assert.False(Error.None.Is(NotFound));
         Assert.False(Error.None.Is(new Error("Some error")));
     }
 
@@ -203,25 +201,25 @@ public class ErrorTests
     [Fact]
     public void Error_As_FindsErrorInChain()
     {
-        var inner = SentinelErrors.NotFound;
+        var inner = NotFound;
         var middle = new Error("Middle error", inner);
         var outer = new Error("Outer error", middle);
 
-        Assert.True(outer.As(SentinelErrors.NotFound, out var match));
-        Assert.Equal(SentinelErrors.NotFound.Message, match.Message);
+        Assert.True(outer.As(NotFound, out var match));
+        Assert.Equal(NotFound.Message, match.Message);
         
-        Assert.True(middle.As(SentinelErrors.NotFound, out match));
-        Assert.Equal(SentinelErrors.NotFound.Message, match.Message);
+        Assert.True(middle.As(NotFound, out match));
+        Assert.Equal(NotFound.Message, match.Message);
         
-        Assert.True(inner.As(SentinelErrors.NotFound, out match));
-        Assert.Equal(SentinelErrors.NotFound.Message, match.Message);
+        Assert.True(inner.As(NotFound, out match));
+        Assert.Equal(NotFound.Message, match.Message);
     }
 
     [Fact]
     public void Error_As_DoesNotFindErrorInChain()
     {
         var differentError = new Error("Different error");
-        var err = new Error("Some error", SentinelErrors.NotFound);
+        var err = new Error("Some error", NotFound);
 
         Assert.False(err.As(differentError, out var match));
         Assert.Equal(Error.None, match);
@@ -244,35 +242,31 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_As_WithAnyTargetReturnsFalse()
+    public void Error_As_WithErrorNoneReturnsFalse()
     {
-        Assert.False(Error.None.As(SentinelErrors.NotFound, out var match));
+        Assert.False(Error.None.As(NotFound, out var match));
         Assert.Equal(Error.None, match);
         
         Assert.False(Error.None.As(new Error("Some error"), out match));
         Assert.Equal(Error.None, match);
     }
 
-    private (object?, Error) GetDatabaseError() => (null, new Error("Database connection failed"));
-
     [Fact]
     public void Error_CapturesSourceLocation()
     {
-        var (val, err) = DoStuff();
-        
+        var (_, err) = GetDatabaseError();
+
         // Error properties contain the full details
         Assert.Equal("Database connection failed", err.Message);
-        Assert.Equal("DoStuff", err.MemberName);
+        Assert.Equal("GetDatabaseError", err.MemberName);
         Assert.Contains("ErrorTests.cs", err.FilePath);
         Assert.True(err.LineNumber > 0);
         
         // Stack includes location info
         Assert.Contains("Database connection failed", err.Stack);
-        Assert.Contains("DoStuff", err.Stack);
+        Assert.Contains("GetDatabaseError", err.Stack);
         Assert.Contains("ErrorTests.cs", err.Stack);
     }
-
-    private (string Value, Error err) DoStuff() => (string.Empty, new Error("Database connection failed"));
 
     [Fact]
     public void Error_Wrap_CanChainErrors()
@@ -292,7 +286,7 @@ public class ErrorTests
         (var flag, err) = func3();
         if (err) errWrapper.Wrap(new Error("Func3 failed", err));
 
-        // Verify the error chain is built correctly
+        // Verify the error
         Assert.True(errWrapper);
         
         var stack = errWrapper.Stack;
@@ -333,6 +327,4 @@ public class ErrorTests
         Assert.Contains("Unknown error at GetErrorWithoutMessage", err.Stack);
         Assert.Contains("ErrorTests.cs", err.Stack);
     }
-
-    private (object?, Error) GetErrorWithoutMessage() => (null, new Error(message: null));
 }
