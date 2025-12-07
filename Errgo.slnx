@@ -1,4 +1,11 @@
 <Solution>
+  <Folder Name="/Analyzer/">
+    <Project Path="Errgo.Analyzer/Errgo.Analyzer.CodeFixes/Errgo.Analyzer.CodeFixes.csproj" />
+    <Project Path="Errgo.Analyzer/Errgo.Analyzer.Package/Errgo.Analyzer.Package.csproj" />
+    <Project Path="Errgo.Analyzer/Errgo.Analyzer.Test/Errgo.Analyzer.Test.csproj" />
+    <Project Path="Errgo.Analyzer/Errgo.Analyzer.Vsix/Errgo.Analyzer.Vsix.csproj" />
+    <Project Path="Errgo.Analyzer/Errgo.Analyzer/Errgo.Analyzer.csproj" />
+  </Folder>
   <Project Path="Errgo.Benchmarks/Errgo.Benchmarks.csproj" />
   <Project Path="Errgo.Examples/Errgo.Examples.csproj" />
   <Project Path="Errgo.Tests/Errgo.Tests.csproj" />
