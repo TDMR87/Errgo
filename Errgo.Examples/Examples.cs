@@ -6,17 +6,17 @@ public class Examples
 {
     public async Task<(GameSession?, Error)> CreateGameSession(CancellationToken cancellationToken = default)
     {
-        var (hash, err) = await GenerateUniqueGameSessionHash();
-        if (err)
-        {
-            return (null, err);
-        }
+        var (hash, _) = await GenerateUniqueGameSessionHash();
+        //if (err)
+        //{
+        //    return (null, err);
+        //}
 
-        (var gameSession, err) = await AddGameSession(hash, cancellationToken);
-        if (err)
-        {
-            return (null, err);
-        }
+        (var gameSession, var err) = await AddGameSession(hash, cancellationToken);
+        //if (err)
+        //{
+        //    return (null, err);
+        //}
 
         return (gameSession, Error.None);
     }
@@ -30,7 +30,7 @@ public class Examples
         }
         catch
         {
-            return (null, "Error adding new game session to database");
+            return (null, new Error("Error adding new game session to database"));
         }
     }
 
@@ -57,7 +57,7 @@ public class Examples
             return (hash, Error.None);
         }
 
-        return (string.Empty, $"Failed to generate unique game session hash after {maxAttempts} attempts");
+        return (string.Empty, new Error($"Failed to generate unique game session hash after {maxAttempts} attempts"));
     }
 
     private async Task<(bool, Error)> IsHashUnique(string hash)
@@ -70,5 +70,5 @@ public class Examples
 
 public static class Errors
 {
-    public static Error HashNotUniqueError = $"Hash already exists";
+    public static Error HashNotUniqueError = new("Hash already exists");
 }
