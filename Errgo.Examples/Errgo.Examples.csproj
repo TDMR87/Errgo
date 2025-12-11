@@ -10,10 +10,6 @@
     <ProjectReference Include="..\Errgo\Errgo.csproj" />
     
     <!-- Reference the analyzer for local development -->
-    <ProjectReference Include="..\Errgo.Analyzers\Errgo.Analyzers.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Analyzer</OutputItemType>
-    </ProjectReference>
   </ItemGroup>
 
 </Project>
