@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" ?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="Errgo.Analyzer.32239971-8716-4cae-9cdf-ec2c0713cd15" Version="1.0" Language="en-US" Publisher="yllap"/>
+    <Identity Id="Errgo.Analyzer.f74d32ba-379c-4041-bd85-254e077b4a52" Version="1.0" Language="en-US" Publisher="DiegoRönkkömäki-Tapi"/>
     <DisplayName>Errgo.Analyzer</DisplayName>
     <Description xml:space="preserve">This is a sample diagnostic extension for the .NET Compiler Platform ("Roslyn").</Description>
   </Metadata>

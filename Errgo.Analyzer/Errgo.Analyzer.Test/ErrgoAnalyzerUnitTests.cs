@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 using VerifyCS = Errgo.Analyzer.Test.CSharpCodeFixVerifier<
-    Errgo.Analyzer.ErrgoAnalyzerAnalyzer,
+    Errgo.Analyzer.ErrgoAnalyzer,
     Errgo.Analyzer.ErrgoAnalyzerCodeFixProvider>;
 
 namespace Errgo.Analyzer.Test

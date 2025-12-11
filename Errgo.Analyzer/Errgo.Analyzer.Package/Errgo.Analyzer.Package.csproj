@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -10,7 +10,7 @@
   <PropertyGroup>
     <PackageId>Errgo.Analyzer</PackageId>
     <PackageVersion>1.0.0.0</PackageVersion>
-    <Authors>yllap</Authors>
+    <Authors>DiegoRönkkömäki-Tapi</Authors>
     <PackageLicenseUrl>http://LICENSE_URL_HERE_OR_DELETE_THIS_LINE</PackageLicenseUrl>
     <PackageProjectUrl>http://PROJECT_URL_HERE_OR_DELETE_THIS_LINE</PackageProjectUrl>
     <PackageIconUrl>http://ICON_URL_HERE_OR_DELETE_THIS_LINE</PackageIconUrl>
@@ -27,8 +27,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Errgo.Analyzer\Errgo.Analyzer.csproj" />
     <ProjectReference Include="..\Errgo.Analyzer.CodeFixes\Errgo.Analyzer.CodeFixes.csproj" />
+    <ProjectReference Include="..\Errgo.Analyzer\Errgo.Analyzer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -20,7 +20,7 @@ namespace Errgo.Analyzer
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
-            get { return ImmutableArray.Create(ErrgoAnalyzerAnalyzer.DiagnosticId); }
+            get { return ImmutableArray.Create(ErrgoAnalyzer.DiagnosticId); }
         }
 
         public sealed override FixAllProvider GetFixAllProvider()
