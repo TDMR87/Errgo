@@ -156,14 +156,14 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_Is_WithErrorNoneReturnsFalse()
+    public void Error_Is_ReturnsFalseWhenErrorNone()
     {
         var err = new Error("Some error");
         Assert.False(err.Is(Error.None));
     }
 
     [Fact]
-    public void Error_Is_FindsErrorInChain()
+    public void Error_Is_ReturnsTrueWhenErrorInChain()
     {
         var inner = NotFound;
         var middle = new Error("Middle error", inner);
@@ -175,11 +175,10 @@ public class ErrorTests
     }
 
     [Fact]
-    public void Error_Is_DoesNotFindErrorNotInChain()
+    public void Error_Is_ReturnsFalseWhenErrorNotInChain()
     {
         var differentError = new Error("Different error");
         var err = new Error("Some error", NotFound);
-
         Assert.False(err.Is(differentError));
     }
 
@@ -327,4 +326,201 @@ public class ErrorTests
         Assert.Contains("Unknown error at GetErrorWithoutMessage", err.Stack);
         Assert.Contains("ErrorTests.cs", err.Stack);
     }
+
+    #region New Edge Case Tests
+
+    [Fact]
+    public void Error_Empty_IsAnError()
+    {
+        var err = Error.Empty;
+        Assert.True(err);
+        Assert.NotEqual(Error.None, err);
+    }
+
+    [Fact]
+    public void Error_Empty_HasEmptyMessage()
+    {
+        var err = Error.Empty;
+        Assert.Equal(string.Empty, err.Message);
+    }
+
+    [Fact]
+    public void Error_Details_MatchesToString()
+    {
+        var err = new Error("Test error");
+        Assert.Equal(err.ToString(), err.Details);
+    }
+
+    [Fact]
+    public void Error_Wrap_WithNullArray_DoesNotThrow()
+    {
+        var err = new Error("Original");
+        err.Wrap(null!);
+        Assert.Equal("Original", err.Message);
+        Assert.Empty(err.InnerErrors);
+    }
+
+    [Fact]
+    public void Error_Wrap_WithEmptyArray_DoesNotThrow()
+    {
+        var err = new Error("Original");
+        err.Wrap(Array.Empty<Error>());
+        Assert.Equal("Original", err.Message);
+        Assert.Empty(err.InnerErrors);
+    }
+
+    [Fact]
+    public void Error_Wrap_WithErrorNoneInArray_IgnoresErrorNone()
+    {
+        var err = new Error("Original");
+        var validError = new Error("Valid");
+        err.Wrap(Error.None, validError, Error.None);
+        
+        Assert.Contains("Valid", err.Stack);
+        Assert.Single(err.InnerErrors);
+    }
+
+    [Fact]
+    public void Error_Wrap_OnErrorNone_DoesNothing()
+    {
+        var err = Error.None;
+        err.Wrap(new Error("Should not appear"));
+        Assert.False(err);
+    }
+
+    [Fact]
+    public void Error_Constructor_WithErrorNoneAsInner_NoChain()
+    {
+        var err = new Error("Outer", Error.None);
+        Assert.Equal("Outer", err.Message);
+        Assert.Empty(err.InnerErrors);
+    }
+
+    [Fact]
+    public void Error_ToString_WithNoSourceLocation_ReturnsMessageOnly()
+    {
+        var err = new Error("Test", "", "", 0);
+        Assert.Equal("Test", err.ToString());
+    }
+
+    [Fact]
+    public void Error_GetHashCode_ForErrorNone_ReturnsZero()
+    {
+        Assert.Equal(0, Error.None.GetHashCode());
+    }
+
+    [Fact]
+    public void Error_GetHashCode_SameMessage_SameHash()
+    {
+        var err1 = new Error("Same");
+        var err2 = new Error("Same");
+        Assert.Equal(err1.GetHashCode(), err2.GetHashCode());
+    }
+
+    [Fact]
+    public void Error_GetHashCode_DifferentMessage_DifferentHash()
+    {
+        var err1 = new Error("Message 1");
+        var err2 = new Error("Message 2");
+        Assert.NotEqual(err1.GetHashCode(), err2.GetHashCode());
+    }
+
+    [Fact]
+    public void Error_EqualityOperator_ConsistentWithEquals()
+    {
+        var err1 = new Error("Test");
+        var err2 = new Error("Test");
+        var err3 = new Error("Different");
+
+        Assert.True(err1 == err2);
+        Assert.True(err1.Equals(err2));
+        
+        Assert.False(err1 == err3);
+        Assert.False(err1.Equals(err3));
+    }
+
+    [Fact]
+    public void Error_InnerErrors_DeeplyNestedChains()
+    {
+        var err1 = new Error("Error 1");
+        var err2 = new Error("Error 2", err1);
+        var err3 = new Error("Error 3", err2);
+        var err4 = new Error("Error 4", err3);
+
+        var innerErrors = err4.InnerErrors;
+        Assert.Equal(3, innerErrors.Count);
+        Assert.Equal("Error 3", innerErrors[0].Message);
+        Assert.Equal("Error 2", innerErrors[1].Message);
+        Assert.Equal("Error 1", innerErrors[2].Message);
+    }
+
+    [Fact]
+    public void Error_Wrap_MultipleTimesPrepends()
+    {
+        var err = new Error("Original");
+        err.Wrap(new Error("First wrap"));
+        err.Wrap(new Error("Second wrap"));
+
+        var stack = err.Stack;
+        var lines = stack.Split(Environment.NewLine);
+
+        // Original is the outer error (appears first in Stack)
+        Assert.Contains("Original", lines[0]);
+        Assert.Contains("Second wrap", lines[1]);
+        Assert.Contains("First wrap", lines[2]);
+    }
+
+    [Fact]
+    public void Error_Stack_WithEmptyMessages_FiltersWhitespace()
+    {
+        var err1 = new Error("");
+        var err2 = new Error("Valid", err1);
+        
+        var stack = err2.Stack;
+        var lines = stack.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        
+        // Empty message lines should be filtered
+        Assert.DoesNotContain(lines, line => string.IsNullOrWhiteSpace(line));
+    }
+
+    [Fact]
+    public void Error_NotEqual_WhenOnlyOneIsErrorNone()
+    {
+        var err = new Error("Test");
+        Assert.False(err.Equals(Error.None));
+        Assert.False(Error.None.Equals(err));
+        Assert.False(err == Error.None);
+        Assert.False(Error.None == err);
+    }
+
+    [Fact]
+    public void Error_ImplicitBoolConversion_ConsistentBehavior()
+    {
+        var errorWithMessage = new Error("Test");
+        var errorNone = Error.None;
+        var errorEmpty = Error.Empty;
+
+        Assert.True(errorWithMessage);
+        Assert.False(errorNone);
+        Assert.True(errorEmpty); // Empty is still an error
+    }
+
+    [Fact]
+    public void Error_InnerErrors_PreservesOrder()
+    {
+        var err1 = new Error("First");
+        var err2 = new Error("Second");
+        var err3 = new Error("Third");
+        
+        var wrapper = new Error("Wrapper");
+        wrapper.Wrap(err1, err2, err3);
+
+        var innerErrors = wrapper.InnerErrors;
+        Assert.Equal(3, innerErrors.Count);  // Only the wrapped errors, not "Wrapper" itself
+        Assert.Equal("First", innerErrors[0].Message);
+        Assert.Equal("Second", innerErrors[1].Message);
+        Assert.Equal("Third", innerErrors[2].Message);
+    }
+
+    #endregion
 }

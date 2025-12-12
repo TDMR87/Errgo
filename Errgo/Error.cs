@@ -285,17 +285,10 @@ public readonly record struct Error
         if (chain == null)
         {
             chain = new ErrorChain();
-            if (!string.IsNullOrWhiteSpace(_info.Message))
-            {
-                chain.Append(new Error(_info.Message));
-            }
-
-            // Set the chain back to the readonly struct field
-            Unsafe.AsRef(in _errorChain) = chain;
+            Unsafe.AsRef(in _errorChain) = chain; // Set the chain back to the readonly struct field
         }
 
         // Prepend new errors to the chain (most recent first)
-        // Process in reverse order so the first error in the params ends up first
         for (int i = errors.Length - 1; i >= 0; i--)
         {
             var error = errors[i];

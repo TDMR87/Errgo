@@ -32,7 +32,7 @@ public class Examples
     {
         for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
-            const string chars = "bcdfghjklmnpqrstvwxyz0123456789"; // vowels removed
+            const string chars = "bcdfghjklmnpqrstvwxyz0123456789";
             var hashChars = new char[8];
 
             for (int i = 0; i < 8; i++)
