@@ -7,10 +7,10 @@ public class ErrorAsyncTests
     {
         var (_, err) = await GetErrorAsync();
         
-        Assert.NotEmpty(err.MemberName);
-        Assert.Equal("GetErrorAsync", err.MemberName);
-        Assert.Contains("ErrorAsyncTests.cs", err.FilePath);
-        Assert.True(err.LineNumber > 0);
+        Assert.NotEmpty(err.SourceMemberName);
+        Assert.Equal("GetErrorAsync", err.SourceMemberName);
+        Assert.Contains("ErrorAsyncTests.cs", err.SourceFilePath);
+        Assert.True(err.SourceLineNumber > 0);
     }
 
     [Fact]
@@ -21,8 +21,8 @@ public class ErrorAsyncTests
         var innerErrors = err.InnerErrors;
         Assert.Equal(2, innerErrors.Count);
         
-        Assert.Equal("Level2Async", innerErrors[0].MemberName);
-        Assert.Equal("Level1Async", innerErrors[1].MemberName);
+        Assert.Equal("Level2Async", innerErrors[0].SourceMemberName);
+        Assert.Equal("Level1Async", innerErrors[1].SourceMemberName);
     }
 
     [Fact]
@@ -41,9 +41,9 @@ public class ErrorAsyncTests
         var (_, err1) = await GetErrorAsync();
         var (_, err2) = await GetErrorAsync();
         
-        Assert.Equal(err1.MemberName, err2.MemberName);
-        Assert.NotEqual(0, err1.LineNumber);
-        Assert.NotEqual(0, err2.LineNumber);
+        Assert.Equal(err1.SourceMemberName, err2.SourceMemberName);
+        Assert.NotEqual(0, err1.SourceLineNumber);
+        Assert.NotEqual(0, err2.SourceLineNumber);
     }
 
     private async Task<(object?, Error)> GetErrorAsync()

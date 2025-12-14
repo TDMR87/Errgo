@@ -44,9 +44,9 @@ public class ErrorAsTests
         // Use As to find the actual error in the chain with source location
         Assert.True(err.As(dbErrorSentinel, out var match));
         Assert.Equal("Database connection failed", match.Message);
-        Assert.Equal("GetDatabaseError", match.MemberName);
-        Assert.Contains("ErrorAsTests.cs", match.FilePath);
-        Assert.True(match.LineNumber > 0);
+        Assert.Equal("GetDatabaseError", match.SourceMemberName);
+        Assert.Contains("ErrorAsTests.cs", match.SourceFilePath);
+        Assert.True(match.SourceLineNumber > 0);
     }
 
     [Fact]

@@ -77,7 +77,6 @@ public class Examples
     public void RepositoryPatternExample()
     {
         var (user, err) = GetUser(123);
-
         if (err)
         {
             // Wrap the repository error with service-layer context

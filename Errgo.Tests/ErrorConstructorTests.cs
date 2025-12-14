@@ -19,21 +19,21 @@ public class ErrorConstructorTests
     public void Error_DefaultConstructor_DoesNotCaptureSourceLocation()
     {
         var err = new Error();
-        Assert.Empty(err.MemberName);
+        Assert.Empty(err.SourceMemberName);
     }
 
     [Fact]
     public void Error_DefaultConstructor_WithNullMessageCaputersSourceLocation()
     {
         Error err = new(null!);
-        Assert.NotEmpty(err.MemberName);
+        Assert.NotEmpty(err.SourceMemberName);
     }
 
     [Fact]
     public void Error_DefaultConstructor_WithEmptyMessageCaputersSourceLocation()
     {
         Error err = new(string.Empty);
-        Assert.NotEmpty(err.MemberName);
+        Assert.NotEmpty(err.SourceMemberName);
     }
 
     [Fact]
@@ -51,12 +51,12 @@ public class ErrorConstructorTests
         Assert.Equal(string.Empty, emptyError.Message);
 
         // Neither of them capture source location
-        Assert.Empty(defaultError.MemberName);
-        Assert.Empty(defaultError.FilePath);
-        Assert.Equal(0, defaultError.LineNumber);
-        Assert.Empty(emptyError.MemberName);
-        Assert.Empty(emptyError.FilePath);
-        Assert.Equal(0, emptyError.LineNumber);
+        Assert.Empty(defaultError.SourceMemberName);
+        Assert.Empty(defaultError.SourceFilePath);
+        Assert.Equal(0, defaultError.SourceLineNumber);
+        Assert.Empty(emptyError.SourceMemberName);
+        Assert.Empty(emptyError.SourceFilePath);
+        Assert.Equal(0, emptyError.SourceLineNumber);
     }
 
     [Fact]

@@ -5,8 +5,11 @@ namespace Errgo;
 public readonly record struct Error
 {
     private readonly bool _hasError;
+    private readonly string _message;
+    private readonly string _sourceMemberName;
+    private readonly string _sourceFilePath;
+    private readonly int _sourceLineNumber;
     private readonly ErrorChain? _errorChain;
-    private readonly ErrorInfo _info;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -16,7 +19,10 @@ public readonly record struct Error
     /// </remarks>
     public Error()
     {
-        _info = new ErrorInfo(Constants.UnknownError, string.Empty, string.Empty, 0);
+        _message = Constants.UnknownError;
+        _sourceMemberName = string.Empty;
+        _sourceFilePath = string.Empty;
+        _sourceLineNumber = 0;
         _hasError = true;
         _errorChain = null;
     }
@@ -39,8 +45,10 @@ public readonly record struct Error
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-        message ??= Constants.UnknownError;
-        _info = new ErrorInfo(message, memberName, filePath, lineNumber);
+        _message = message ?? Constants.UnknownError;
+        _sourceMemberName = memberName;
+        _sourceFilePath = filePath;
+        _sourceLineNumber = lineNumber;
         _hasError = true;
         _errorChain = null;
     }
@@ -66,8 +74,10 @@ public readonly record struct Error
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-        message ??= Constants.UnknownError;
-        _info = new ErrorInfo(message, memberName, filePath, lineNumber);
+        _message = message ?? Constants.UnknownError;
+        _sourceMemberName = memberName;
+        _sourceFilePath = filePath;
+        _sourceLineNumber = lineNumber;
         _hasError = true;
 
         if (!error._hasError)
@@ -96,7 +106,7 @@ public readonly record struct Error
     /// <summary>
     /// Gets the message associated with this error, without source location info.
     /// </summary>
-    public string Message => _info.Message;
+    public string Message => _message;
 
     /// <summary>
     /// Gets the message associated with this error with details about the source location info.
@@ -106,17 +116,17 @@ public readonly record struct Error
     /// <summary>
     /// Gets the member (e.g. method or property) where this error occurred.
     /// </summary>
-    public string MemberName => _info.MemberName ?? string.Empty;
+    public string SourceMemberName => _sourceMemberName ?? string.Empty;
 
     /// <summary>
     /// Gets the source file where this error occurred.
     /// </summary>
-    public string FilePath => _info.FilePath ?? string.Empty;
+    public string SourceFilePath => _sourceFilePath ?? string.Empty;
 
     /// <summary>
     /// Gets the line number where this error occurred.
     /// </summary>
-    public int LineNumber => _info.LineNumber;
+    public int SourceLineNumber => _sourceLineNumber;
 
     /// <summary>
     /// Gets the full error chain as a single message with source location info.
@@ -125,10 +135,7 @@ public readonly record struct Error
     {
         get
         {
-            var lines = new List<string>
-            {
-                this.ToString()
-            };
+            var lines = new List<string> { this.ToString() };
             
             lines.AddRange(InnerErrors.Select(e => e.ToString()));
             
@@ -152,24 +159,24 @@ public readonly record struct Error
         // Error.None should return empty string
         if (!_hasError) return string.Empty;
 
-        var hasMemberName = !string.IsNullOrWhiteSpace(_info.MemberName);
-        var hasFilePath = !string.IsNullOrWhiteSpace(_info.FilePath);
-        var hasLineNumber = _info.LineNumber > 0;
+        var hasMemberName = !string.IsNullOrWhiteSpace(_sourceMemberName);
+        var hasFilePath = !string.IsNullOrWhiteSpace(_sourceFilePath);
+        var hasLineNumber = _sourceLineNumber > 0;
 
         // If no source info, just return the message
-        if (!hasMemberName) return _info.Message;
+        if (!hasMemberName) return _message;
 
         var fileName = hasFilePath 
-            ? Path.GetFileName(_info.FilePath) 
+            ? Path.GetFileName(_sourceFilePath) 
             : string.Empty;
 
         if (!string.IsNullOrWhiteSpace(fileName) && hasLineNumber)
-            return $"{_info.Message} at {_info.MemberName} in {fileName} (line {_info.LineNumber})";
+            return $"{_message} at {_sourceMemberName} in {fileName} (line {_sourceLineNumber})";
 
         if (!string.IsNullOrWhiteSpace(fileName))
-            return $"{_info.Message} at {_info.MemberName} in {fileName}";
+            return $"{_message} at {_sourceMemberName} in {fileName}";
 
-        return $"{_info.Message} at {_info.MemberName}";
+        return $"{_message} at {_sourceMemberName}";
     }
 
     /// <summary>
@@ -190,7 +197,7 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Recursively collects errors from the specified list and adds them to the provided collection.
+    /// Recursively collects errors from the specified list and adds them to the provided errors collection.
     /// </summary>
     /// <remarks>Errors are collected from both direct errors and any nested error chains. 
     /// Each error in the chain is added, followed by recursively collecting from any nested chains.</remarks>
@@ -202,7 +209,7 @@ public readonly record struct Error
         {
             collection.Add(error);
             
-            // If this error has an error chain, recursively collect them
+            // If this error has an error chain, recursively collect all of them
             if (error._errorChain != null) CollectErrors(error._errorChain.Errors, collection);
         }
     }
@@ -223,7 +230,7 @@ public readonly record struct Error
         if (!this._hasError || !target._hasError) return false;
 
         // Check this error
-        if (_info.Message.Equals(target._info.Message, StringComparison.Ordinal)) return true;
+        if (_message.Equals(target._message, StringComparison.Ordinal)) return true;
 
         // Check errors in the error chain recursively
         foreach (var error in _errorChain?.Errors ?? Enumerable.Empty<Error>())
@@ -254,14 +261,12 @@ public readonly record struct Error
         if (!this._hasError) return false;
         if (!target._hasError) return false;
 
-        // Check this error
-        if (_info.Message.Equals(target._info.Message, StringComparison.Ordinal))
+        if (_message.Equals(target._message, StringComparison.Ordinal))
         {
             match = this;
             return true;
         }
 
-        // Check other errors in the chain
         if (_errorChain != null)
         {
             foreach (var error in _errorChain.Errors)
@@ -289,7 +294,7 @@ public readonly record struct Error
             Unsafe.AsRef(in _errorChain) = chain; // Set the chain back to the readonly struct field
         }
 
-        // Prepend new errors to the chain (most recent first)
+        // Prepend the most recent error first
         for (int i = errors.Length - 1; i >= 0; i--)
         {
             var error = errors[i];
@@ -298,7 +303,7 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Determines whether the current error is equal to the specified error based on the error message.
+    /// Determines whether the current error is equal to the specified error.
     /// </summary>
     /// <remarks>This method ignores source location and compares only the error state and message text. Use
     /// this method when equality should not consider where the error originated.</remarks>
@@ -310,7 +315,7 @@ public readonly record struct Error
         if (!this._hasError || !other._hasError) return false;
 
         return (_hasError == true && other._hasError == true) && 
-               (_info.Message.Equals(other._info.Message, StringComparison.Ordinal));
+               (_message.Equals(other._message, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -322,6 +327,6 @@ public readonly record struct Error
     public override int GetHashCode()
     {
         if (!_hasError) return 0;
-        return _info.Message?.GetHashCode() ?? 0;
+        return _message?.GetHashCode() ?? 0;
     }
 }

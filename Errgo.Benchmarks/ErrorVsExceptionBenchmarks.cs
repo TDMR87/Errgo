@@ -11,29 +11,6 @@ namespace Errgo.Benchmarks;
 [RankColumn]
 public class ErrorVsExceptionBenchmarks
 {
-    [Benchmark(Description = "Error: Return error from method")]
-    public (object?, Error) ReturnError()
-    {
-        var (val, err) = MethodThatReturnsError();
-        if (err) return (null, err);
-        else return (val, Error.None);
-    }
-
-    [Benchmark(Description = "Exception: Throw and catch exception")]
-    public Exception ThrowAndCatchException()
-    {
-        try
-        {
-            var val = MethodThatThrowsException();
-            return new Exception("No exception thrown");
-        }
-        catch (Exception ex)
-        {
-            return ex;
-        }
-    }
-
-
     [Benchmark(Description = "Error: through 10 method calls")]
     public Error ErrorThroughDeepCallStack()
     {
@@ -46,7 +23,7 @@ public class ErrorVsExceptionBenchmarks
         try
         {
             DeepCallStack_Exception_1();
-            return new Exception("No exception thrown");
+            return new Exception("err");
         }
         catch (Exception ex)
         {
@@ -54,11 +31,7 @@ public class ErrorVsExceptionBenchmarks
         }
     }
 
-    private (object?, Error) MethodThatReturnsError() => (null, new Error("Operation failed"));
-
-    private object? MethodThatThrowsException() => throw new InvalidOperationException("Operation failed");
-
-    // Error call stack
+    // Error call stack. Add methods just return the Error.
     private Error DeepCallStack_Error_1() => DeepCallStack_Error_2();
     private Error DeepCallStack_Error_2() => DeepCallStack_Error_3();
     private Error DeepCallStack_Error_3() => DeepCallStack_Error_4();
@@ -70,7 +43,7 @@ public class ErrorVsExceptionBenchmarks
     private Error DeepCallStack_Error_9() => DeepCallStack_Error_10();
     private Error DeepCallStack_Error_10() => new Error("Operation failed");
 
-    // Exception call stack - all methods throw to properly measure stack unwinding
+    // Exception call stack. All methods throw the exception to properly measure the cost of exceptions
     private void DeepCallStack_Exception_1() => DeepCallStack_Exception_2();
     private void DeepCallStack_Exception_2() => DeepCallStack_Exception_3();
     private void DeepCallStack_Exception_3() => DeepCallStack_Exception_4();
