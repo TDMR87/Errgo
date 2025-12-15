@@ -6,6 +6,6 @@ class Program
 {
     static void Main(string[] args)
     {
-        BenchmarkRunner.Run<ErrorVsExceptionBenchmarks>(args: args);
+        BenchmarkRunner.Run<ComparisonBenchmarks>();
     }
 }
