@@ -12,11 +12,11 @@ namespace Errgo.Analyzer
     public class ErrgoAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "ERRGO001";
+        private const string Category = "Usage";
 
         private static readonly LocalizableString Title = "Error not checked";
         private static readonly LocalizableString MessageFormat = "Error variable '{0}' is not checked";
-        private static readonly LocalizableString Description = "Error variables should be checked with 'if (err)' or similar before being used or before the next statement.";
-        private const string Category = "Usage";
+        private static readonly LocalizableString Description = "Error variables should be checked with 'if (err)', 'if (err != Error.None)' or similar before being used or before the next statement.";
 
         private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId, 
@@ -35,7 +35,6 @@ namespace Errgo.Analyzer
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-
             context.RegisterSyntaxNodeAction(AnalyzeLocalDeclaration, SyntaxKind.LocalDeclarationStatement);
             context.RegisterSyntaxNodeAction(AnalyzeAssignment, SyntaxKind.SimpleAssignmentExpression);
         }
@@ -46,14 +45,10 @@ namespace Errgo.Analyzer
             
             foreach (var variable in declaration.Declaration.Variables)
             {
-                if (variable.Initializer == null)
-                    continue;
+                if (variable.Initializer == null) continue;
 
                 var typeInfo = context.SemanticModel.GetTypeInfo(declaration.Declaration.Type);
-                if (IsErrorType(typeInfo.Type))
-                {
-                    CheckErrorVariable(context, variable.Identifier.Text, variable, declaration);
-                }
+                if (IsErrorType(typeInfo.Type)) CheckErrorVariable(context, variable.Identifier.Text, variable, declaration);
             }
         }
 
@@ -120,12 +115,10 @@ namespace Errgo.Analyzer
                 }
             }
 
-            if (errorVariables.Count == 0)
-                return;
+            if (errorVariables.Count == 0) return;
 
             var statement = assignment.FirstAncestorOrSelf<StatementSyntax>();
-            if (statement == null)
-                return;
+            if (statement == null) return;
 
             foreach (var errorVar in errorVariables)
             {
@@ -136,16 +129,13 @@ namespace Errgo.Analyzer
         private static void CheckErrorVariable(SyntaxNodeAnalysisContext context, string errorVarName, SyntaxNode errorNode, StatementSyntax statement)
         {
             var parentBlock = statement.Parent;
-            if (parentBlock == null)
-                return;
+            if (parentBlock == null) return;
 
             var statements = GetStatements(parentBlock);
-            if (statements == null)
-                return;
+            if (statements == null) return;
 
             var currentIndex = statements.IndexOf(statement);
-            if (currentIndex < 0 || currentIndex >= statements.Count - 1)
-                return;
+            if (currentIndex < 0 || currentIndex >= statements.Count - 1) return;
 
             var nextStatement = statements[currentIndex + 1];
 
@@ -158,15 +148,12 @@ namespace Errgo.Analyzer
 
         private static bool IsErrorType(ITypeSymbol type)
         {
-            if (type == null)
-                return false;
+            if (type == null) return false;
 
-            if (type.Name != "Error")
-                return false;
+            if (type.Name != "Error") return false;
 
             var namespaceSymbol = type.ContainingNamespace;
-            if (namespaceSymbol == null)
-                return false;
+            if (namespaceSymbol == null) return false;
 
             return namespaceSymbol.ToString() == "Errgo";
         }
@@ -174,12 +161,10 @@ namespace Errgo.Analyzer
         private static IList<StatementSyntax> GetStatements(SyntaxNode node)
         {
             var block = node as BlockSyntax;
-            if (block != null)
-                return block.Statements.ToList();
+            if (block != null) return block.Statements.ToList();
 
             var switchSection = node as SwitchSectionSyntax;
-            if (switchSection != null)
-                return switchSection.Statements.ToList();
+            if (switchSection != null) return switchSection.Statements.ToList();
 
             return null;
         }
@@ -188,10 +173,7 @@ namespace Errgo.Analyzer
         {
             // Only if statements count as checking the error
             var ifStatement = statement as IfStatementSyntax;
-            if (ifStatement != null)
-            {
-                return IsErrorCheckedInExpression(ifStatement.Condition, errorVarName);
-            }
+            if (ifStatement != null) return IsErrorCheckedInExpression(ifStatement.Condition, errorVarName);
 
             return false;
         }

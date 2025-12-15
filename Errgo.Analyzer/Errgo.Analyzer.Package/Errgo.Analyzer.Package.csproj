@@ -9,8 +9,8 @@
 
   <PropertyGroup>
     <PackageId>Errgo.Analyzer</PackageId>
-    <PackageVersion>1.0.0.0</PackageVersion>
-    <Authors>DiegoRönkkömäki-Tapi</Authors>
+    <PackageVersion>0.1.0</PackageVersion>
+    <Authors>Diego Rönkkömäki-Tapia</Authors>
     <PackageLicenseUrl>http://LICENSE_URL_HERE_OR_DELETE_THIS_LINE</PackageLicenseUrl>
     <PackageProjectUrl>http://PROJECT_URL_HERE_OR_DELETE_THIS_LINE</PackageProjectUrl>
     <PackageIconUrl>http://ICON_URL_HERE_OR_DELETE_THIS_LINE</PackageIconUrl>
