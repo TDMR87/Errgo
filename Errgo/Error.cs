@@ -160,17 +160,13 @@ public readonly record struct Error
         if (!_hasError) return string.Empty;
 
         var hasMemberName = !string.IsNullOrWhiteSpace(_sourceMemberName);
-        var hasFilePath = !string.IsNullOrWhiteSpace(_sourceFilePath);
-        var hasLineNumber = _sourceLineNumber > 0;
-
-        // If no source info, just return the message
         if (!hasMemberName) return _message;
 
-        var fileName = hasFilePath 
+        var fileName = !string.IsNullOrWhiteSpace(_sourceFilePath) 
             ? Path.GetFileName(_sourceFilePath) 
             : string.Empty;
 
-        if (!string.IsNullOrWhiteSpace(fileName) && hasLineNumber)
+        if (!string.IsNullOrWhiteSpace(fileName) && _sourceLineNumber > 0)
             return $"{_message} at {_sourceMemberName} in {fileName} (line {_sourceLineNumber})";
 
         if (!string.IsNullOrWhiteSpace(fileName))
@@ -203,7 +199,7 @@ public readonly record struct Error
     /// Each error in the chain is added, followed by recursively collecting from any nested chains.</remarks>
     /// <param name="errors">The list of errors from which to collect. Each error may contain a chain of nested errors.</param>
     /// <param name="collection">The collection to which errors are added. Errors from all chains are appended to this list.</param>
-    private static void CollectErrors(IReadOnlyList<Error> errors, List<Error> collection)
+    private static void CollectErrors(Error[] errors, ICollection<Error> collection)
     {
         foreach (var error in errors)
         {

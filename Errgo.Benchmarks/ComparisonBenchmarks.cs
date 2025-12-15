@@ -135,7 +135,7 @@ public class ComparisonBenchmarks
         var secondError = new Errgo.Error("Second error", firstError);
         var thirdError = new Errgo.Error("Final error", secondError);
 
-        var rootError = new Error("Root");
+        var rootError = new Error("Root error");
         rootError.Wrap(thirdError);
         return rootError;
     }
@@ -149,41 +149,6 @@ public class ComparisonBenchmarks
 
         var rootError = new FluentResults.Error("Root error").CausedBy(thirdError);
         return rootError;
-    }
-
-    [Benchmark(Description = "ErrorOr - Multiple chained unsuccessful results")]
-    public ErrorOr<int> ErrorOrErrorChaining()
-    {
-        // ErrorOr doesn't support hierarchical error chaining
-        // flat list instead
-        var firstError = ErrorOr.Error.Validation();
-        var secondError = ErrorOr.Error.Forbidden();
-        var thirdError = ErrorOr.Error.NotFound();
-
-        var rootError = new List<ErrorOr.Error> 
-        { 
-            firstError, 
-            secondError, 
-            thirdError 
-        };
-
-        return rootError;
-    }
-
-    [Benchmark(Description = "Ardalis - Multiple chained unsuccessful results")]
-    public Ardalis.Result.Result<int> ArdalisErrorChaining()
-    {
-        // Ardalis.Result doesn't support hierarchical error chaining
-        // flat list instead
-        var errors = new List<string> 
-        { 
-            "First error", 
-            "Second error", 
-            "Third error" 
-        };
-
-        var result = Result<int>.Error(new ErrorList(errors));
-        return result;
     }
 
     #endregion
