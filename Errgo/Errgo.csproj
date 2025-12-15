@@ -9,12 +9,12 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>Errgo</PackageId>
-    <Version>0.0.1</Version>
+    <Version>0.1.0</Version>
     <Authors>Diego Rönkkömäki-Tapia</Authors>
-    <Description>Go-style errors-as-values error handling library for C#</Description>
+    <Description>Go-style errors-as-values library for C#</Description>
     <PackageTags>error-handling;go;errors;result</PackageTags>
-    <PackageProjectUrl>https://github.com/TDMR87/Ergo</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/TDMR87/Ergo</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/TDMR87/Errgo</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/TDMR87/Errgo</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     
