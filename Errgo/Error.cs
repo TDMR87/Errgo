@@ -9,7 +9,7 @@ public readonly record struct Error
     private readonly string _sourceMemberName;
     private readonly string _sourceFilePath;
     private readonly int _sourceLineNumber;
-    private readonly ErrorChain? _errorChain;
+    private readonly InnerErrors? _innerErrors;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -24,7 +24,7 @@ public readonly record struct Error
         _sourceFilePath = string.Empty;
         _sourceLineNumber = 0;
         _hasError = true;
-        _errorChain = null;
+        _innerErrors = null;
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public readonly record struct Error
         _sourceFilePath = filePath;
         _sourceLineNumber = lineNumber;
         _hasError = true;
-        _errorChain = null;
+        _innerErrors = null;
     }
 
     /// <summary>
@@ -82,13 +82,13 @@ public readonly record struct Error
 
         if (!error._hasError)
         {
-            _errorChain = null;
+            _innerErrors = null;
             return;
         }
 
         // Create an error chain with just the inner error
-        _errorChain = new ErrorChain();
-        _errorChain.Append(error);
+        _innerErrors = new InnerErrors();
+        _innerErrors.Append(error);
     }
 
     /// <summary>
@@ -101,7 +101,7 @@ public readonly record struct Error
     /// Instantiates a new Error with no messages, no inner errors and no source location information.
     /// An empty error is still considered an error.
     /// </summary>
-    public static Error Empty => new("", "", "", 0);
+    public static Error Empty => new(string.Empty, string.Empty, string.Empty, 0);
 
     /// <summary>
     /// Gets the message associated with this error, without source location info.
@@ -129,16 +129,14 @@ public readonly record struct Error
     public int SourceLineNumber => _sourceLineNumber;
 
     /// <summary>
-    /// Gets the full error chain as a single message with source location info.
+    /// Gets the full error stack as a single string containing all inner errors (if any) with their source location info.
     /// </summary>
     public string Stack
     {
         get
         {
             var lines = new List<string> { this.ToString() };
-            
             lines.AddRange(InnerErrors.Select(e => e.ToString()));
-            
             return string.Join(Environment.NewLine, lines.Where(l => !string.IsNullOrWhiteSpace(l)));
         }
     }
@@ -183,11 +181,8 @@ public readonly record struct Error
         get
         {
             var errors = new List<Error>();
-            
             if (!_hasError) return errors;
-
-            if (_errorChain != null) CollectErrors(_errorChain.Errors, errors);
-
+            if (_innerErrors != null) CollectErrors(_innerErrors.Errors, errors);
             return errors;
         }
     }
@@ -205,8 +200,8 @@ public readonly record struct Error
         {
             collection.Add(error);
             
-            // If this error has an error chain, recursively collect all of them
-            if (error._errorChain != null) CollectErrors(error._errorChain.Errors, collection);
+            // If this error has inner errors, recursively collect all of them
+            if (error._innerErrors != null) CollectErrors(error._innerErrors.Errors, collection);
         }
     }
 
@@ -224,12 +219,9 @@ public readonly record struct Error
     {
         if (!this._hasError && !target._hasError) return true;
         if (!this._hasError || !target._hasError) return false;
-
-        // Check this error
         if (_message.Equals(target._message, StringComparison.Ordinal)) return true;
 
-        // Check errors in the error chain recursively
-        foreach (var error in _errorChain?.Errors ?? Enumerable.Empty<Error>())
+        foreach (var error in _innerErrors?.Errors ?? Enumerable.Empty<Error>())
         {
             if (error.Is(target)) return true;
         }
@@ -256,16 +248,15 @@ public readonly record struct Error
 
         if (!this._hasError) return false;
         if (!target._hasError) return false;
-
         if (_message.Equals(target._message, StringComparison.Ordinal))
         {
             match = this;
             return true;
         }
 
-        if (_errorChain != null)
+        if (_innerErrors != null)
         {
-            foreach (var error in _errorChain.Errors)
+            foreach (var error in _innerErrors.Errors)
             {
                 if (error.As(target, out match)) return true;
             }
@@ -283,11 +274,11 @@ public readonly record struct Error
     {
         if (errors == null || errors.Length == 0) return;
 
-        var chain = _errorChain;
+        var chain = _innerErrors;
         if (chain == null)
         {
-            chain = new ErrorChain();
-            Unsafe.AsRef(in _errorChain) = chain; // Set the chain back to the readonly struct field
+            chain = new InnerErrors();
+            Unsafe.AsRef(in _innerErrors) = chain; // Set the chain back to the readonly struct field
         }
 
         // Prepend the most recent error first

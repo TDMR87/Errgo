@@ -4,7 +4,7 @@
 /// This class acts as a shared reference in a chain of errors.
 /// Stores complete Error objects to preserve nested error chains.
 /// </summary>
-internal sealed class ErrorChain
+internal sealed class InnerErrors
 {
     private Error[] _errors = [];
 
