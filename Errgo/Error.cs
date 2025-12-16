@@ -2,14 +2,19 @@
 
 namespace Errgo;
 
+internal static class Constants
+{
+    public const string UnknownError = "Unknown error";
+}
+
 public readonly record struct Error
 {
-    private readonly bool _hasError;
+    private readonly bool _isError;
     private readonly string _message;
     private readonly string _sourceMemberName;
     private readonly string _sourceFilePath;
     private readonly int _sourceLineNumber;
-    private readonly InnerErrors? _innerErrors;
+    private readonly ErrorChain? _errorChain;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -19,12 +24,12 @@ public readonly record struct Error
     /// </remarks>
     public Error()
     {
+        _isError = true;
         _message = Constants.UnknownError;
         _sourceMemberName = string.Empty;
         _sourceFilePath = string.Empty;
         _sourceLineNumber = 0;
-        _hasError = true;
-        _innerErrors = null;
+        _errorChain = null;
     }
 
     /// <summary>
@@ -45,12 +50,12 @@ public readonly record struct Error
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
+        _isError = true;
         _message = message ?? Constants.UnknownError;
         _sourceMemberName = memberName;
         _sourceFilePath = filePath;
         _sourceLineNumber = lineNumber;
-        _hasError = true;
-        _innerErrors = null;
+        _errorChain = null;
     }
 
     /// <summary>
@@ -74,21 +79,20 @@ public readonly record struct Error
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
+        _isError = true;
         _message = message ?? Constants.UnknownError;
         _sourceMemberName = memberName;
         _sourceFilePath = filePath;
         _sourceLineNumber = lineNumber;
-        _hasError = true;
 
-        if (!error._hasError)
+        if (!error._isError)
         {
-            _innerErrors = null;
+            _errorChain = null;
             return;
         }
 
-        // Create an error chain with just the inner error
-        _innerErrors = new InnerErrors();
-        _innerErrors.Append(error);
+        _errorChain = new ErrorChain();
+        _errorChain.Append(error);
     }
 
     /// <summary>
@@ -104,12 +108,12 @@ public readonly record struct Error
     public static Error Empty => new(string.Empty, string.Empty, string.Empty, 0);
 
     /// <summary>
-    /// Gets the message associated with this error, without source location info.
+    /// Gets the message associated with this error, without source location information.
     /// </summary>
     public string Message => _message;
 
     /// <summary>
-    /// Gets the message associated with this error with details about the source location info.
+    /// Gets the message associated with this error with source location information.
     /// </summary>
     public string MessageDetails => this.ToString();
 
@@ -145,7 +149,7 @@ public readonly record struct Error
     /// Implicit conversion from Error to bool. Returns true if error is not Error.None
     /// </summary>
     /// <param name="error"></param>
-    public static implicit operator bool(Error error) => error._hasError;
+    public static implicit operator bool(Error error) => error._isError;
 
     /// <summary>
     /// Returns a string representation of the error with source location information.
@@ -154,8 +158,7 @@ public readonly record struct Error
     /// Returns an empty string for Error.None.</returns>
     public override string ToString()
     {
-        // Error.None should return empty string
-        if (!_hasError) return string.Empty;
+        if (!_isError) return string.Empty;
 
         var hasMemberName = !string.IsNullOrWhiteSpace(_sourceMemberName);
         if (!hasMemberName) return _message;
@@ -174,34 +177,46 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Gets all inner errors in the error chain (excluding the current error itself).
+    /// Recursively gets all inner errors in the error chain as a flat list (excluding the current error itself).
     /// </summary>
+    /// <remarks>
+    /// This property traverses through the entire error chain and collects all inner errors into a single flat list.
+    /// Use <see cref="Is"/> to check if a specific error exists in the chain.
+    /// Use <see cref="As"/> to find and extract a specific error from the chain.
+    /// </remarks>
     public IReadOnlyList<Error> InnerErrors
     {
         get
         {
-            var errors = new List<Error>();
-            if (!_hasError) return errors;
-            if (_innerErrors != null) CollectErrors(_innerErrors.Errors, errors);
-            return errors;
+            if (!_isError) return [];
+
+            var errorsFlattened = new List<Error>();
+
+            if (_errorChain is not null)
+            {
+                CollectErrorsRecursively(_errorChain, errorsFlattened);
+            }
+
+            return errorsFlattened;
         }
     }
 
     /// <summary>
-    /// Recursively collects errors from the specified list and adds them to the provided errors collection.
+    /// Recursively collects errors from the specified error chain and flattens them to the provided errors collection.
     /// </summary>
-    /// <remarks>Errors are collected from both direct errors and any nested error chains. 
-    /// Each error in the chain is added, followed by recursively collecting from any nested chains.</remarks>
-    /// <param name="errors">The list of errors from which to collect. Each error may contain a chain of nested errors.</param>
-    /// <param name="collection">The collection to which errors are added. Errors from all chains are appended to this list.</param>
-    private static void CollectErrors(Error[] errors, ICollection<Error> collection)
+    /// <remarks> Each error in the chain is added, followed by recursively collecting from any nested chains.</remarks>
+    /// <param name="errors">The error chain from which to collect. Each error may contain a chain of nested errors.</param>
+    /// <param name="collection">The collection to which errors are added. Errors from all chains are flattened to this list.</param>
+    private static void CollectErrorsRecursively(ErrorChain errorChain, ICollection<Error> collection)
     {
-        foreach (var error in errors)
+        foreach (var error in errorChain.Errors)
         {
             collection.Add(error);
-            
-            // If this error has inner errors, recursively collect all of them
-            if (error._innerErrors != null) CollectErrors(error._innerErrors.Errors, collection);
+
+            if (error._errorChain is not null)
+            {
+                CollectErrorsRecursively(error._errorChain, collection);
+            }
         }
     }
 
@@ -217,11 +232,11 @@ public readonly record struct Error
     /// <returns>True if this error or any wrapped error has the same message as the target; otherwise, false</returns>
     public bool Is(Error target)
     {
-        if (!this._hasError && !target._hasError) return true;
-        if (!this._hasError || !target._hasError) return false;
+        if (!this._isError && !target._isError) return true;
+        if (!this._isError || !target._isError) return false;
         if (_message.Equals(target._message, StringComparison.Ordinal)) return true;
 
-        foreach (var error in _innerErrors?.Errors ?? Enumerable.Empty<Error>())
+        foreach (var error in _errorChain?.Errors ?? Enumerable.Empty<Error>())
         {
             if (error.Is(target)) return true;
         }
@@ -246,17 +261,17 @@ public readonly record struct Error
     {
         match = Error.None;
 
-        if (!this._hasError) return false;
-        if (!target._hasError) return false;
+        if (!this._isError) return false;
+        if (!target._isError) return false;
         if (_message.Equals(target._message, StringComparison.Ordinal))
         {
             match = this;
             return true;
         }
 
-        if (_innerErrors != null)
+        if (_errorChain is not null)
         {
-            foreach (var error in _innerErrors.Errors)
+            foreach (var error in _errorChain.Errors)
             {
                 if (error.As(target, out match)) return true;
             }
@@ -274,18 +289,18 @@ public readonly record struct Error
     {
         if (errors == null || errors.Length == 0) return;
 
-        var chain = _innerErrors;
+        var chain = _errorChain;
         if (chain == null)
         {
-            chain = new InnerErrors();
-            Unsafe.AsRef(in _innerErrors) = chain; // Set the chain back to the readonly struct field
+            chain = new ErrorChain();
+            Unsafe.AsRef(in _errorChain) = chain; // Set the chain back to the readonly struct field
         }
 
         // Prepend the most recent error first
         for (int i = errors.Length - 1; i >= 0; i--)
         {
             var error = errors[i];
-            if (error._hasError) chain.Prepend(error);
+            if (error._isError) chain.Prepend(error);
         }
     }
 
@@ -298,10 +313,10 @@ public readonly record struct Error
     /// <returns>true if both errors have the same error state and, if present, identical message text; otherwise, false.</returns>
     public bool Equals(Error other)
     {
-        if (!this._hasError && !other._hasError) return true;
-        if (!this._hasError || !other._hasError) return false;
+        if (!this._isError && !other._isError) return true;
+        if (!this._isError || !other._isError) return false;
 
-        return (_hasError == true && other._hasError == true) && 
+        return (_isError == true && other._isError == true) && 
                (_message.Equals(other._message, StringComparison.Ordinal));
     }
 
@@ -313,7 +328,38 @@ public readonly record struct Error
     /// hash code of the message text, or 0 if the message text is null.</returns>
     public override int GetHashCode()
     {
-        if (!_hasError) return 0;
+        if (!_isError) return 0;
         return _message?.GetHashCode() ?? 0;
+    }
+}
+
+/// <summary>
+/// This class acts as a mutable container for the error chain.
+/// Since Error is a readonly struct, we cannot modify _errorChain directly after construction.
+/// However, we can mutate the ErrorChain object that _errorChain points to,
+/// which enables the Wrap() method to add errors to the chain.
+/// </summary>
+internal sealed class ErrorChain
+{
+    private Error[] _errors = [];
+
+    public Error[] Errors => _errors;
+
+    public void Append(Error error)
+    {
+        if (!error) return;
+        var newArray = new Error[_errors.Length + 1];
+        Array.Copy(_errors, newArray, _errors.Length);
+        newArray[_errors.Length] = error;
+        _errors = newArray;
+    }
+
+    public void Prepend(Error error)
+    {
+        if (!error) return;
+        var newArray = new Error[_errors.Length + 1];
+        newArray[0] = error;
+        Array.Copy(_errors, 0, newArray, 1, _errors.Length);
+        _errors = newArray;
     }
 }
