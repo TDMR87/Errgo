@@ -14,7 +14,8 @@ public readonly record struct Error
     private readonly string _sourceMemberName;
     private readonly string _sourceFilePath;
     private readonly int _sourceLineNumber;
-    private readonly ErrorChain? _errorChain;
+    //private readonly ErrorChain? _errorChain;
+    private readonly Error[]? _innerErrors;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -29,7 +30,8 @@ public readonly record struct Error
         _sourceMemberName = string.Empty;
         _sourceFilePath = string.Empty;
         _sourceLineNumber = 0;
-        _errorChain = null;
+        //_errorChain = null;
+        _innerErrors = null;
     }
 
     /// <summary>
@@ -55,7 +57,8 @@ public readonly record struct Error
         _sourceMemberName = memberName;
         _sourceFilePath = filePath;
         _sourceLineNumber = lineNumber;
-        _errorChain = null;
+        //_errorChain = null;
+        _innerErrors = null;
     }
 
     /// <summary>
@@ -87,12 +90,14 @@ public readonly record struct Error
 
         if (!error._isError)
         {
-            _errorChain = null;
+            //_errorChain = null;
+            _innerErrors = null;
             return;
         }
 
-        _errorChain = new ErrorChain();
-        _errorChain.Append(error);
+        //_errorChain = new ErrorChain();
+        //_errorChain.Append(error);
+        _innerErrors = [error];
     }
 
     /// <summary>
@@ -192,9 +197,9 @@ public readonly record struct Error
 
             var errorsFlattened = new List<Error>();
 
-            if (_errorChain is not null)
+            if (_innerErrors is not null)
             {
-                CollectErrorsRecursively(_errorChain, errorsFlattened);
+                CollectErrorsRecursively(_innerErrors, errorsFlattened);
             }
 
             return errorsFlattened;
@@ -207,15 +212,15 @@ public readonly record struct Error
     /// <remarks> Each error in the chain is added, followed by recursively collecting from any nested chains.</remarks>
     /// <param name="errors">The error chain from which to collect. Each error may contain a chain of nested errors.</param>
     /// <param name="collection">The collection to which errors are added. Errors from all chains are flattened to this list.</param>
-    private static void CollectErrorsRecursively(ErrorChain errorChain, ICollection<Error> collection)
+    private static void CollectErrorsRecursively(Error[] errors, ICollection<Error> collection)
     {
-        foreach (var error in errorChain.Errors)
+        foreach (var error in errors)
         {
             collection.Add(error);
 
-            if (error._errorChain is not null)
+            if (error._innerErrors is not null)
             {
-                CollectErrorsRecursively(error._errorChain, collection);
+                CollectErrorsRecursively(error._innerErrors, collection);
             }
         }
     }
@@ -236,7 +241,7 @@ public readonly record struct Error
         if (!this._isError || !target._isError) return false;
         if (_message.Equals(target._message, StringComparison.Ordinal)) return true;
 
-        foreach (var error in _errorChain?.Errors ?? Enumerable.Empty<Error>())
+        foreach (var error in _innerErrors ?? Enumerable.Empty<Error>())
         {
             if (error.Is(target)) return true;
         }
@@ -269,12 +274,9 @@ public readonly record struct Error
             return true;
         }
 
-        if (_errorChain is not null)
+        foreach (var error in _innerErrors ?? Enumerable.Empty<Error>())
         {
-            foreach (var error in _errorChain.Errors)
-            {
-                if (error.As(target, out match)) return true;
-            }
+            if (error.As(target, out match)) return true;
         }
 
         return false;
@@ -289,19 +291,51 @@ public readonly record struct Error
     {
         if (errors == null || errors.Length == 0) return;
 
-        var chain = _errorChain;
-        if (chain == null)
-        {
-            chain = new ErrorChain();
-            Unsafe.AsRef(in _errorChain) = chain; // Set the chain back to the readonly struct field
-        }
-
-        // Prepend the most recent error first
+        // Prepend the most recent error first (reverse order)
         for (int i = errors.Length - 1; i >= 0; i--)
         {
             var error = errors[i];
-            if (error._isError) chain.Prepend(error);
+            if (error._isError)
+            {
+                PrependInnerErrors(error);
+            }
         }
+    }
+
+    public void AppendInnerErrors(Error error)
+    {
+        if (!error) return;
+
+        var innerErrors = _innerErrors;
+        
+        if (innerErrors is null)
+        {
+            Unsafe.AsRef(in _innerErrors) = [error];
+            return;
+        }
+
+        var newArray = new Error[innerErrors.Length + 1];
+        Array.Copy(innerErrors, newArray, innerErrors.Length);
+        newArray[innerErrors.Length] = error;
+        Unsafe.AsRef(in _innerErrors) = newArray;
+    }
+
+    public void PrependInnerErrors(Error error)
+    {
+        if (!error) return;
+
+        var innerErrors = _innerErrors;
+        
+        if (innerErrors is null)
+        {
+            Unsafe.AsRef(in _innerErrors) = [error];
+            return;
+        }
+
+        var newArray = new Error[innerErrors.Length + 1];
+        newArray[0] = error;
+        Array.Copy(innerErrors, 0, newArray, 1, innerErrors.Length);
+        Unsafe.AsRef(in _innerErrors) = newArray;
     }
 
     /// <summary>
@@ -330,36 +364,5 @@ public readonly record struct Error
     {
         if (!_isError) return 0;
         return _message?.GetHashCode() ?? 0;
-    }
-}
-
-/// <summary>
-/// This class acts as a mutable container for the error chain.
-/// Since Error is a readonly struct, we cannot modify _errorChain directly after construction.
-/// However, we can mutate the ErrorChain object that _errorChain points to,
-/// which enables the Wrap() method to add errors to the chain.
-/// </summary>
-internal sealed class ErrorChain
-{
-    private Error[] _errors = [];
-
-    public Error[] Errors => _errors;
-
-    public void Append(Error error)
-    {
-        if (!error) return;
-        var newArray = new Error[_errors.Length + 1];
-        Array.Copy(_errors, newArray, _errors.Length);
-        newArray[_errors.Length] = error;
-        _errors = newArray;
-    }
-
-    public void Prepend(Error error)
-    {
-        if (!error) return;
-        var newArray = new Error[_errors.Length + 1];
-        newArray[0] = error;
-        Array.Copy(_errors, 0, newArray, 1, _errors.Length);
-        _errors = newArray;
     }
 }
