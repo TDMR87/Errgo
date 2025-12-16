@@ -6,21 +6,33 @@ using Ardalis.Result;
 namespace Errgo.Benchmarks;
 
 [MemoryDiagnoser]
-[Orderer(SummaryOrderPolicy.FastestToSlowest)]
+[Orderer(SummaryOrderPolicy.Method)]
 [RankColumn]
 public class ComparisonBenchmarks
 {
     #region Callstack
 
-    [Benchmark(Description = "Errgo - Through 10 method calls")]
-    public Errgo.Error ErrgoThroughDeepCallStack()
+    [Benchmark(Description = "Propagate through 10 method calls - Ardalis")]
+    public Ardalis.Result.Result<int> PropagateThroughDeepCallStack_Ardalis()
+    {
+        return DeepCallStack_Ardalis_1();
+    }
+
+    [Benchmark(Description = "Propagate through 10 method calls - Errgo")]
+    public Errgo.Error PropagateThroughDeepCallStack_Errgo()
     {
         var err = DeepCallStack_Errgo_1();
         return err;
     }
 
-    [Benchmark(Description = "Exception - Through 10 method calls")]
-    public Exception ExceptionThroughDeepCallStack()
+    [Benchmark(Description = "Propagate through 10 method calls - ErrorOr")]
+    public ErrorOr<int> PropagateThroughDeepCallStack_ErrorOr()
+    {
+        return DeepCallStack_ErrorOr_1();
+    }
+
+    [Benchmark(Description = "Propagate through 10 method calls - Exception")]
+    public Exception PropagateThroughDeepCallStack_Exception()
     {
         try
         {
@@ -33,54 +45,42 @@ public class ComparisonBenchmarks
         }
     }
 
-    [Benchmark(Description = "FluentResults - Through 10 method calls")]
-    public FluentResults.Result FluentResultsThroughDeepCallStack()
+    [Benchmark(Description = "Propagate through 10 method calls - FluentResults")]
+    public FluentResults.Result PropagateThroughDeepCallStack_FluentResults()
     {
         return DeepCallStack_FluentResults_1();
-    }
-
-    [Benchmark(Description = "ErrorOr - Through 10 method calls")]
-    public ErrorOr<int> ErrorOrThroughDeepCallStack()
-    {
-        return DeepCallStack_ErrorOr_1();
-    }
-
-    [Benchmark(Description = "Ardalis - Through 10 method calls")]
-    public Ardalis.Result.Result<int> ArdalisThroughDeepCallStack()
-    {
-        return DeepCallStack_Ardalis_1();
     }
 
     #endregion
 
     #region Return unsuccessful result
 
-    [Benchmark(Description = "Errgo - Return unsuccessful result")]
-    public Errgo.Error ErrgoCreateError()
-    {
-        return new Errgo.Error("Operation failed");
-    }
-
-    [Benchmark(Description = "FluentResults - Return unsuccessful result")]
-    public FluentResults.Result FluentResultsCreateError()
-    {
-        return FluentResults.Result.Fail("Operation failed");
-    }
-
-    [Benchmark(Description = "ErrorOr - Return unsuccessful result")]
-    public ErrorOr<int> ErrorOrCreateError()
-    {
-        return ErrorOr.Error.Failure(description: "Operation failed");
-    }
-
-    [Benchmark(Description = "Ardalis - Return unsuccessful result")]
-    public Ardalis.Result.Result<int> ArdalisCreateError()
+    [Benchmark(Description = "Return unsuccessful result - Ardalis")]
+    public Ardalis.Result.Result<int> CreateError_Ardalis()
     {
         return Result<int>.Error("Operation failed");
     }
 
-    [Benchmark(Description = "Exception - Return unsuccessful result (throw)")]
-    public Exception ExceptionThrow()
+    [Benchmark(Description = "Return unsuccessful result - Errgo")]
+    public Errgo.Error CreateError_Errgo()
+    {
+        return new Errgo.Error("Operation failed");
+    }
+
+    [Benchmark(Description = "Return unsuccessful result - ErrorOr")]
+    public ErrorOr<int> CreateError_ErrorOr()
+    {
+        return ErrorOr.Error.Failure(description: "Operation failed");
+    }
+
+    [Benchmark(Description = "Return unsuccessful result - FluentResults")]
+    public FluentResults.Result CreateError_FluentResults()
+    {
+        return FluentResults.Result.Fail("Operation failed");
+    }
+
+    [Benchmark(Description = "Return unsuccessful result (throw) - Exception")]
+    public Exception Throw_Exception()
     {
         try
         {
@@ -96,40 +96,40 @@ public class ComparisonBenchmarks
 
     #region Return successful result
 
-    [Benchmark(Description = "Errgo - return successful result")]
-    public (int, Error) ErrgoCreateSuccess()
+    [Benchmark(Description = "Return successful result - Ardalis")]
+    public Ardalis.Result.Result<int> CreateSuccess_Ardalis()
+    {
+        var number = GetNumber();
+        return Result<int>.Success(number);
+    }
+
+    [Benchmark(Description = "Return successful result - Errgo")]
+    public (int, Error) CreateSuccess_Errgo()
     {
         var number = GetNumber();
         return (number, Error.None);
     }
 
-    [Benchmark(Description = "FluentResults - Return successful result")]
-    public FluentResults.Result<int> FluentResultsCreateSuccess()
-    {
-        var number = GetNumber();
-        return FluentResults.Result.Ok(number);
-    }
-
-    [Benchmark(Description = "ErrorOr - Return successful result")]
-    public ErrorOr<int> ErrorOrCreateSuccess()
+    [Benchmark(Description = "Return successful result - ErrorOr")]
+    public ErrorOr<int> CreateSuccess_ErrorOr()
     {
         var number = GetNumber();
         return number;
     }
 
-    [Benchmark(Description = "Ardalis - Return successful result")]
-    public Ardalis.Result.Result<int> ArdalisCreateSuccess()
+    [Benchmark(Description = "Return successful result - FluentResults")]
+    public FluentResults.Result<int> CreateSuccess_FluentResults()
     {
         var number = GetNumber();
-        return Result<int>.Success(number);
+        return FluentResults.Result.Ok(number);
     }
 
     #endregion
 
     #region Wrap unsuccessful result
 
-    [Benchmark(Description = "Errgo - Multiple chained unsuccessful results")]
-    public Error ErrgoErrorChaining()
+    [Benchmark(Description = "Multiple chained unsuccessful results - Errgo")]
+    public Error ErrorChaining_Errgo()
     {
         var firstError = new Errgo.Error("First error");
         var secondError = new Errgo.Error("Second error", firstError);
@@ -140,8 +140,8 @@ public class ComparisonBenchmarks
         return rootError;
     }
 
-    [Benchmark(Description = "FluentResults - Multiple chained unsuccessful results")]
-    public FluentResults.Result FluentResultsErrorChaining()
+    [Benchmark(Description = "Multiple chained unsuccessful results - FluentResults")]
+    public FluentResults.Result ErrorChaining_FluentResults()
     {
         var firstError = new FluentResults.Error("First error");
         var secondError = new FluentResults.Error("Second error").CausedBy(firstError);
