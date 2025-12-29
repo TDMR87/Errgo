@@ -24,11 +24,11 @@ public class ErrorInnerErrorsTests
         var err2 = new Error("Second");
         var err3 = new Error("Third");
         
-        var wrapper = new Error("Wrapper");
-        wrapper.Wrap(err1, err2, err3);
+        var joiner = new Error("Joiner");
+        joiner.Join(err1, err2, err3);
 
-        var innerErrors = wrapper.InnerErrors;
-        Assert.Equal(3, innerErrors.Count);  // Only the wrapped errors, not "Wrapper" itself
+        var innerErrors = joiner.InnerErrors;
+        Assert.Equal(3, innerErrors.Count);  // Only the joined errors, not "Joiner" itself
         Assert.Equal("First", innerErrors[0].Message);
         Assert.Equal("Second", innerErrors[1].Message);
         Assert.Equal("Third", innerErrors[2].Message);

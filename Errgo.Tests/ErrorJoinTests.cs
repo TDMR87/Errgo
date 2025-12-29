@@ -1,29 +1,29 @@
 namespace Errgo.Tests;
 
-public class ErrorWrapTests
+public class ErrorJoinTests
 {
     [Fact]
-    public void Error_Wrap_CanChainErrors()
+    public void Error_Join_CanChainErrors()
     {
         Func<(int, Error)> func1 = () => (default, new Error("Error 1"));
         Func<(string?, Error)> func2 = () => (default, new Error("Error 2"));
         Func<(bool?, Error)> func3 = () => (null, new Error("Error 3"));
 
-        var errWrapper = Error.Empty;
+        var errJoiner = Error.Empty;
 
         var (val, err) = func1();
-        if (err) errWrapper.Wrap(new Error("Func1 failed", err));
+        if (err) errJoiner.Join(new Error("Func1 failed", err));
 
         (var str, err) = func2();
-        if (err) errWrapper.Wrap(new Error("Func2 failed", err));
+        if (err) errJoiner.Join(new Error("Func2 failed", err));
 
         (var flag, err) = func3();
-        if (err) errWrapper.Wrap(new Error("Func3 failed", err));
+        if (err) errJoiner.Join(new Error("Func3 failed", err));
 
         // Verify the error
-        Assert.True(errWrapper);
+        Assert.True(errJoiner);
 
-        var stack = errWrapper.Stack;
+        var stack = errJoiner.Stack;
         Assert.Contains("Func1 failed", stack);
         Assert.Contains("Func2 failed", stack);
         Assert.Contains("Func3 failed", stack);
@@ -33,50 +33,50 @@ public class ErrorWrapTests
     }
 
     [Fact]
-    public void Error_Wrap_WithNullArray_DoesNotThrow()
+    public void Error_Join_WithNullArray_DoesNotThrow()
     {
         var err = new Error("Original");
-        err.Wrap(null!);
+        err.Join(null!);
         Assert.Equal("Original", err.Message);
         Assert.Empty(err.InnerErrors);
     }
 
     [Fact]
-    public void Error_Wrap_WithEmptyArray_DoesNotThrow()
+    public void Error_Join_WithEmptyArray_DoesNotThrow()
     {
         var err = new Error("Original");
-        err.Wrap(Array.Empty<Error>());
+        err.Join(Array.Empty<Error>());
         Assert.Equal("Original", err.Message);
         Assert.Empty(err.InnerErrors);
     }
 
     [Fact]
-    public void Error_Wrap_WithErrorNoneInArray_IgnoresErrorNone()
+    public void Error_Join_WithErrorNoneInArray_IgnoresErrorNone()
     {
         var err = new Error("Original");
         var validError = new Error("Valid");
-        err.Wrap(Error.None, validError, Error.None);
+        err.Join(Error.None, validError, Error.None);
 
         Assert.Contains("Valid", err.Stack);
         Assert.Single(err.InnerErrors);
     }
 
     [Fact]
-    public void Error_Wrap_OnErrorNone_DoesNothing()
+    public void Error_Join_OnErrorNone_DoesNothing()
     {
         var err = Error.None;
-        err.Wrap(new Error("Should not appear"));
+        err.Join(new Error("Should not appear"));
         Assert.False(err);
     }
 
     [Fact]
-    public void Error_Wrap_SameErrorTwice_AddsBothInstances()
+    public void Error_Join_SameErrorTwice_AddsBothInstances()
     {
         var err = new Error("Original");
         var inner = new Error("Inner");
 
-        err.Wrap(inner);
-        err.Wrap(inner); // Wrap same error again
+        err.Join(inner);
+        err.Join(inner); // Join same error again
 
         Assert.Equal(2, err.InnerErrors.Count);
         Assert.Equal("Inner", err.InnerErrors[0].Message);
@@ -84,17 +84,17 @@ public class ErrorWrapTests
     }
 
     [Fact]
-    public void Error_Wrap_MixedConstructor_CorrectOrder()
+    public void Error_Join_MixedConstructor_CorrectOrder()
     {
         var err1 = new Error("Error 1");
         var err2 = new Error("Error 2", err1);
 
-        err2.Wrap(new Error("Error 3"));
-        err2.Wrap(new Error("Error 4"));
+        err2.Join(new Error("Error 3"));
+        err2.Join(new Error("Error 4"));
 
         var innerErrors = err2.InnerErrors;
 
-        // Wrap prepends, constructor appends
+        // Join prepends, constructor appends
         // Expected order: Error 4, Error 3, Error 1
         Assert.Equal(3, innerErrors.Count);
         Assert.Equal("Error 4", innerErrors[0].Message);
@@ -103,16 +103,16 @@ public class ErrorWrapTests
     }
 
     [Fact]
-    public void Error_Wrap_ChainedErrors_FlattenedInInnerErrors()
+    public void Error_Join_ChainedErrors_FlattenedInInnerErrors()
     {
         var err1 = new Error("Error 1");
         var err2 = new Error("Error 2", err1);
         var err3 = new Error("Error 3");
 
-        var wrapper = new Error("Wrapper");
-        wrapper.Wrap(err3, err2); // err2 has its own chain
+        var joiner = new Error("Joiner");
+        joiner.Join(err3, err2); // err2 has its own chain
 
-        var innerErrors = wrapper.InnerErrors;
+        var innerErrors = joiner.InnerErrors;
 
         // Should flatten: err3, err2, err1
         Assert.Equal(3, innerErrors.Count);
@@ -122,47 +122,47 @@ public class ErrorWrapTests
     }
 
     [Fact]
-    public void Error_Wrap_AfterConstructorChain_CombinesBoth()
+    public void Error_Join_AfterConstructorChain_CombinesBoth()
     {
         var constructorInner = new Error("Constructor Inner");
         var err = new Error("Outer", constructorInner);
 
-        var wrapInner = new Error("Wrap Inner");
-        err.Wrap(wrapInner);
+        var joinInner = new Error("Join Inner");
+        err.Join(joinInner);
 
         Assert.Equal(2, err.InnerErrors.Count);
-        Assert.Equal("Wrap Inner", err.InnerErrors[0].Message);
+        Assert.Equal("Join Inner", err.InnerErrors[0].Message);
         Assert.Equal("Constructor Inner", err.InnerErrors[1].Message);
     }
 
     [Fact]
-    public void Error_Wrap_MultipleSequentialWraps_MaintainsChronologicalOrder()
+    public void Error_Join_MultipleSequentialJoins_MaintainsChronologicalOrder()
     {
-        // Create an error and wrap multiple errors in chronological sequence
+        // Create an error and join multiple errors in chronological sequence
         var err = new Error("Root Error");
         
-        err.Wrap(new Error("First wrapped"));   // Wrapped at time T1
-        err.Wrap(new Error("Second wrapped"));  // Wrapped at time T2
-        err.Wrap(new Error("Third wrapped"));   // Wrapped at time T3
-        err.Wrap(new Error("Fourth wrapped"));  // Wrapped at time T4
+        err.Join(new Error("First joined"));   // Joined at time T1
+        err.Join(new Error("Second joined"));  // Joined at time T2
+        err.Join(new Error("Third joined"));   // Joined at time T3
+        err.Join(new Error("Fourth joined"));  // Joined at time T4
 
         var innerErrors = err.InnerErrors;
 
         // InnerErrors should be in reverse chronological order (latest first)
         Assert.Equal(4, innerErrors.Count);
-        Assert.Equal("Fourth wrapped", innerErrors[0].Message);   // Most recent (T4)
-        Assert.Equal("Third wrapped", innerErrors[1].Message);    // T3
-        Assert.Equal("Second wrapped", innerErrors[2].Message);   // T2
-        Assert.Equal("First wrapped", innerErrors[3].Message);    // Oldest (T1)
+        Assert.Equal("Fourth joined", innerErrors[0].Message);   // Most recent (T4)
+        Assert.Equal("Third joined", innerErrors[1].Message);    // T3
+        Assert.Equal("Second joined", innerErrors[2].Message);   // T2
+        Assert.Equal("First joined", innerErrors[3].Message);    // Oldest (T1)
     }
 
     [Fact]
-    public void Error_Wrap_MultipleErrorsInSingleCall_MaintainsParameterOrder()
+    public void Error_Join_MultipleErrorsInSingleCall_MaintainsParameterOrder()
     {
         var err = new Error("Root Error");
         
-        // Wrap multiple errors in a single call
-        err.Wrap(
+        // Join multiple errors in a single call
+        err.Join(
             new Error("Error A"),
             new Error("Error B"),
             new Error("Error C")
@@ -170,7 +170,7 @@ public class ErrorWrapTests
 
         var innerErrors = err.InnerErrors;
 
-        // When wrapped in a single call, errors should maintain their parameter order
+        // When joined in a single call, errors should maintain their parameter order
         Assert.Equal(3, innerErrors.Count);
         Assert.Equal("Error A", innerErrors[0].Message);
         Assert.Equal("Error B", innerErrors[1].Message);
@@ -178,46 +178,46 @@ public class ErrorWrapTests
     }
 
     [Fact]
-    public void Error_Wrap_ComplexScenario_CorrectChronologicalOrder()
+    public void Error_Join_ComplexScenario_CorrectChronologicalOrder()
     {
-        // Complex scenario: constructor chain + multiple individual wraps + batch wrap
+        // Complex scenario: constructor chain + multiple individual joins + batch join
         var constructorInner = new Error("Constructor Inner");
         var err = new Error("Root", constructorInner);
 
-        // First individual wrap
-        err.Wrap(new Error("Wrap 1"));
+        // First individual join
+        err.Join(new Error("Join 1"));
         
-        // Second individual wrap
-        err.Wrap(new Error("Wrap 2"));
+        // Second individual join
+        err.Join(new Error("Join 2"));
         
-        // Batch wrap
-        err.Wrap(
+        // Batch join
+        err.Join(
             new Error("Batch A"),
             new Error("Batch B")
         );
         
-        // Final individual wrap
-        err.Wrap(new Error("Wrap 3"));
+        // Final individual join
+        err.Join(new Error("Join 3"));
 
         var innerErrors = err.InnerErrors;
 
         // Expected order (latest first):
-        // Wrap 3 (most recent)
+        // Join 3 (most recent)
         // Batch A, Batch B (prepended as a group)
-        // Wrap 2
-        // Wrap 1
+        // Join 2
+        // Join 1
         // Constructor Inner (oldest)
         Assert.Equal(6, innerErrors.Count);
-        Assert.Equal("Wrap 3", innerErrors[0].Message);
+        Assert.Equal("Join 3", innerErrors[0].Message);
         Assert.Equal("Batch A", innerErrors[1].Message);
         Assert.Equal("Batch B", innerErrors[2].Message);
-        Assert.Equal("Wrap 2", innerErrors[3].Message);
-        Assert.Equal("Wrap 1", innerErrors[4].Message);
+        Assert.Equal("Join 2", innerErrors[3].Message);
+        Assert.Equal("Join 1", innerErrors[4].Message);
         Assert.Equal("Constructor Inner", innerErrors[5].Message);
     }
 
     [Fact]
-    public void Error_Wrap_MultipleIndependentErrorChains_MaintainsChronologicalOrder()
+    public void Error_Join_MultipleIndependentErrorChains_MaintainsChronologicalOrder()
     {
         // Create three independent error chains
         // Chain 1: Database errors
@@ -234,12 +234,12 @@ public class ErrorWrapTests
         var authError2 = new Error("Authentication failed", authError1);
         var authError3 = new Error("Authorization denied", authError2);
 
-        // Wrap all three chains into a single error in sequence
+        // Join all three chains into a single error in sequence
         var rootError = new Error("Operation failed");
         
-        rootError.Wrap(dbError3);          // Wrapped at T1 (with its chain: dbError3, dbError2, dbError1)
-        rootError.Wrap(validationError2);  // Wrapped at T2 (with its chain: validationError2, validationError1)
-        rootError.Wrap(authError3);        // Wrapped at T3 (with its chain: authError3, authError2, authError1)
+        rootError.Join(dbError3);          // Joined at T1 (with its chain: dbError3, dbError2, dbError1)
+        rootError.Join(validationError2);  // Joined at T2 (with its chain: validationError2, validationError1)
+        rootError.Join(authError3);        // Joined at T3 (with its chain: authError3, authError2, authError1)
 
         var innerErrors = rootError.InnerErrors;
 
@@ -266,7 +266,7 @@ public class ErrorWrapTests
     }
 
     [Fact]
-    public void Error_Wrap_MultipleChainedErrorsInSingleCall_MaintainsOrder()
+    public void Error_Join_MultipleChainedErrorsInSingleCall_MaintainsOrder()
     {
         // Create multiple independent error chains
         var chain1Inner = new Error("Chain 1 Inner");
@@ -278,13 +278,13 @@ public class ErrorWrapTests
 
         var chain3 = new Error("Chain 3 Outer");
 
-        // Wrap all chains in a single call
+        // Join all chains in a single call
         var rootError = new Error("Root");
-        rootError.Wrap(chain1, chain2, chain3);
+        rootError.Join(chain1, chain2, chain3);
 
         var innerErrors = rootError.InnerErrors;
 
-        // Expected order when wrapping multiple chains at once:
+        // Expected order when joining multiple chains at once:
         // All of chain1 (outer to inner), then chain2, then chain3
         // Total: 2 + 3 + 1 = 6 inner errors (NOT including rootError)
         Assert.Equal(6, innerErrors.Count);
@@ -297,27 +297,27 @@ public class ErrorWrapTests
     }
 
     [Fact]
-    public void Error_Wrap_MixedSequentialAndBatchWrapsWithChains_CorrectOrder()
+    public void Error_Join_MixedSequentialAndBatchJoinsWithChains_CorrectOrder()
     {
-        // Realistic scenario: wrapping multiple error chains at different times
+        // Realistic scenario: joining multiple error chains at different times
         var rootError = new Error("Request failed");
 
-        // T1: Wrap a simple error
-        rootError.Wrap(new Error("Network timeout"));
+        // T1: Join a simple error
+        rootError.Join(new Error("Network timeout"));
 
-        // T2: Wrap an error with a chain (2 errors total)
+        // T2: Join an error with a chain (2 errors total)
         var validationInner = new Error("Email invalid");
         var validationOuter = new Error("Validation failed", validationInner);
-        rootError.Wrap(validationOuter);
+        rootError.Join(validationOuter);
 
-        // T3: Wrap multiple chains at once (3 errors total)
+        // T3: Join multiple chains at once (3 errors total)
         var dbInner = new Error("Table not found");
         var dbOuter = new Error("Query failed", dbInner);
         var cacheError = new Error("Cache miss");
-        rootError.Wrap(dbOuter, cacheError);
+        rootError.Join(dbOuter, cacheError);
 
-        // T4: Wrap another simple error
-        rootError.Wrap(new Error("Retry limit exceeded"));
+        // T4: Join another simple error
+        rootError.Join(new Error("Retry limit exceeded"));
 
         var innerErrors = rootError.InnerErrors;
 

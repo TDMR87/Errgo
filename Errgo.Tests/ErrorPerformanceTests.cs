@@ -64,13 +64,13 @@ public class ErrorPerformanceTests
     }
 
     [Fact]
-    public void Error_Wrap_ManyErrors_MaintainsOrder()
+    public void Error_Join_ManyErrors_MaintainsOrder()
     {
         var err = new Error("Original");
         
         for (int i = 0; i < 100; i++)
         {
-            err.Wrap(new Error($"Error {i}"));
+            err.Join(new Error($"Error {i}"));
         }
         
         var innerErrors = err.InnerErrors;

@@ -47,7 +47,7 @@ public class ErrorStackTests
         var err3 = new Error("\n\n");
         
         var outer = new Error("Valid");
-        outer.Wrap(err1, err2, err3);
+        outer.Join(err1, err2, err3);
         
         var stack = outer.Stack;
         var lines = stack.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
@@ -143,14 +143,14 @@ public class ErrorStackTests
     }
 
     [Fact]
-    public void Error_Stack_AfterWrap_ShowsCorrectPerspective()
+    public void Error_Stack_AfterJoin_ShowsCorrectPerspective()
     {
-        // Arrange: Create errors and wrap them
+        // Arrange: Create errors and join them
         var dbError = new Error("Database error");
         var validationError = new Error("Validation error");
 
         var rootError = new Error("Root error");
-        rootError.Wrap(dbError, validationError);
+        rootError.Join(dbError, validationError);
 
         // Act: Get stacks from different perspectives
         var rootStack = rootError.Stack;
@@ -167,21 +167,21 @@ public class ErrorStackTests
         Assert.Contains("Database error", rootStack);
         Assert.Contains("Validation error", rootStack);
 
-        // Assert: dbError only contains itself (it wasn't wrapped into dbError)
+        // Assert: dbError only contains itself (it wasn't joined into dbError)
         Assert.Contains("Database error", dbStack);
         Assert.DoesNotContain("Root error", dbStack);
         Assert.DoesNotContain("Validation error", dbStack);
     }
 
     [Fact]
-    public void Error_Stack_NestedChainWithWrap_MaintainsPerspective()
+    public void Error_Stack_NestedChainWithJoin_MaintainsPerspective()
     {
         // Arrange: Complex scenario
         var inner1 = new Error("Inner 1");
         var inner2 = new Error("Inner 2", inner1);
 
         var outer = new Error("Outer");
-        outer.Wrap(inner2);
+        outer.Join(inner2);
 
         // Act
         var outerStack = outer.Stack;
@@ -210,14 +210,14 @@ public class ErrorStackTests
     }
 
     [Fact]
-    public void Error_InnerErrors_OnlyShowsErrorsWrappedByThis()
+    public void Error_InnerErrors_OnlyShowsErrorsJoinedByThis()
     {
         // Arrange: Create a chain
         var err1 = new Error("Error 1");
         var err2 = new Error("Error 2", err1);
         var err3 = new Error("Error 3", err2);
 
-        // Act & Assert: Each error's InnerErrors should only show what IT wrapped
+        // Act & Assert: Each error's InnerErrors should only show what IT joined
 
         // err1 has no inner errors
         Assert.Empty(err1.InnerErrors);

@@ -107,13 +107,13 @@ public class Examples
 
         // Validate multiple fields and accumulate errors
         var (isValid, err) = ValidateEmail("invalid-email");
-        if (err) validationError.Wrap(err);
+        if (err) validationError.Join(err);
 
         (isValid, err) = ValidateAge(-5);
-        if (err) validationError.Wrap(err);
+        if (err) validationError.Join(err);
 
         (isValid, err) = ValidateUsername("");
-        if (err) validationError.Wrap(err);
+        if (err) validationError.Join(err);
 
         if (validationError)
         {

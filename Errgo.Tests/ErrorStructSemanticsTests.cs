@@ -3,15 +3,15 @@ namespace Errgo.Tests;
 public class ErrorStructSemanticsTests
 {
     [Fact]
-    public void Error_Wrap_AfterCopy_SharesErrorChainReference()
+    public void Error_Join_AfterCopy_SharesErrorChainReference()
     {
         var err1 = new Error("Original");
-        err1.Wrap(new Error("Wrapped"));
+        err1.Join(new Error("Joined"));
 
         // Copy
         var errCopy = err1;
 
-        // Both will have the wrapped error due to shared ErrorChain reference
+        // Both will have the joined error due to shared ErrorChain reference
         Assert.Equal(err1, errCopy);
         Assert.Single(err1.InnerErrors);
         Assert.Single(errCopy.InnerErrors);

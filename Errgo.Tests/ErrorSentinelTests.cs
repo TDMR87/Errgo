@@ -29,14 +29,14 @@ public class ErrorSentinelTests
     }
 
     [Fact]
-    public void Error_SentinelError_ChainingWrap()
+    public void Error_SentinelError_ChainingJoin()
     {
         var err = new Error($"Some error happened", NotFound);
-        var wrapper = Error.Empty;
-        wrapper.Wrap(err);
-        Assert.True(wrapper);
-        Assert.Contains("Some error happened", wrapper.Stack);
-        Assert.Contains("Item not found", wrapper.Stack);
+        var joiner = Error.Empty;
+        joiner.Join(err);
+        Assert.True(joiner);
+        Assert.Contains("Some error happened", joiner.Stack);
+        Assert.Contains("Item not found", joiner.Stack);
     }
 
     [Fact]

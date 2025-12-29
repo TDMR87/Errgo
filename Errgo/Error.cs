@@ -283,11 +283,11 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Wraps errors into the error chain.
+    /// Joins errors into the error chain.
     /// Most recent errors are placed first in the chain.
     /// </summary>
     /// <param name="errors">Errors to add to the chain</param>
-    public void Wrap(params Error[] errors)
+    public void Join(params Error[] errors)
     {
         if (errors == null || errors.Length == 0) return;
 

@@ -71,7 +71,7 @@ public class ErrorIsTests
         var err1 = new Error("Duplicate");
         var err2 = new Error("Duplicate");
         var chain = new Error("Outer", err1);
-        chain.Wrap(err2);
+        chain.Join(err2);
 
         Assert.True(chain.Is(new Error("Duplicate")));
     }
@@ -82,11 +82,11 @@ public class ErrorIsTests
         var err1 = new Error("Duplicate");
         var err2 = new Error("Duplicate");
         var chain = new Error("Outer");
-        chain.Wrap(err1);
-        chain.Wrap(err2);
+        chain.Join(err1);
+        chain.Join(err2);
 
         Assert.True(chain.As(new Error("Duplicate"), out var match));
-        // Should find the first occurrence (most recent wrap)
+        // Should find the first occurrence (most recent join)
         Assert.Equal("Duplicate", match.Message);
     }
 
@@ -155,13 +155,13 @@ public class ErrorIsTests
         var err2 = new Error("Error 2");
         var err3 = new Error("Error 3");
 
-        var wrapper = new Error("Wrapper");
-        wrapper.Wrap(err1, err2, err3);
+        var joiner = new Error("Joiner");
+        joiner.Join(err1, err2, err3);
 
-        Assert.True(wrapper.Is(new Error("Error 2")));
-        Assert.True(wrapper.Is(new Error("Error 1")));
-        Assert.True(wrapper.Is(new Error("Error 3")));
-        Assert.False(wrapper.Is(new Error("Error 4")));
+        Assert.True(joiner.Is(new Error("Error 2")));
+        Assert.True(joiner.Is(new Error("Error 1")));
+        Assert.True(joiner.Is(new Error("Error 3")));
+        Assert.False(joiner.Is(new Error("Error 4")));
     }
 
     [Fact]
@@ -171,23 +171,23 @@ public class ErrorIsTests
         var err2 = new Error("Error 2");
         var err3 = new Error("Error 3");
 
-        var wrapper = new Error("Wrapper");
-        wrapper.Wrap(err1, err2, err3);
+        var joiner = new Error("Joiner");
+        joiner.Join(err1, err2, err3);
 
-        Assert.True(wrapper.As(new Error("Error 2"), out var match));
+        Assert.True(joiner.As(new Error("Error 2"), out var match));
         Assert.Equal("Error 2", match.Message);
     }
 
     [Fact]
-    public void Error_Is_MixedConstructorAndWrap_SearchesBoth()
+    public void Error_Is_MixedConstructorAndJoin_SearchesBoth()
     {
         var constructorErr = new Error("Constructor Error");
-        var wrapper = new Error("Wrapper", constructorErr);
+        var joiner = new Error("Joiner", constructorErr);
 
-        var wrapErr = new Error("Wrap Error");
-        wrapper.Wrap(wrapErr);
+        var joinErr = new Error("Join Error");
+        joiner.Join(joinErr);
 
-        Assert.True(wrapper.Is(new Error("Constructor Error")));
-        Assert.True(wrapper.Is(new Error("Wrap Error")));
+        Assert.True(joiner.Is(new Error("Constructor Error")));
+        Assert.True(joiner.Is(new Error("Join Error")));
     }
 }
