@@ -67,20 +67,17 @@ namespace Errgo.Analyzer
             var assignment = (AssignmentExpressionSyntax)context.Node;
 
             // Handle tuple deconstruction: (var x, var err) = ...
-            var tupleExpression = assignment.Left as TupleExpressionSyntax;
-            if (tupleExpression != null)
+            if (assignment.Left is TupleExpressionSyntax tupleExpression)
             {
                 AnalyzeTupleDeconstruction(context, assignment, tupleExpression);
                 return;
             }
 
             // Handle simple assignment: err = ...
-            var identifier = assignment.Left as IdentifierNameSyntax;
-            if (identifier != null)
+            if (assignment.Left is IdentifierNameSyntax identifier)
             {
                 var symbolInfo = context.SemanticModel.GetSymbolInfo(identifier);
-                var localSymbol = symbolInfo.Symbol as ILocalSymbol;
-                if (localSymbol != null && IsErrorType(localSymbol.Type))
+                if (symbolInfo.Symbol is ILocalSymbol localSymbol && IsErrorType(localSymbol.Type))
                 {
                     var statement = assignment.FirstAncestorOrSelf<StatementSyntax>();
                     if (statement != null)
@@ -97,14 +94,12 @@ namespace Errgo.Analyzer
             
             foreach (var argument in tupleExpression.Arguments)
             {
-                var declarationExpression = argument.Expression as DeclarationExpressionSyntax;
-                if (declarationExpression != null)
+                if (argument.Expression is DeclarationExpressionSyntax declarationExpression)
                 {
                     var typeInfo = context.SemanticModel.GetTypeInfo(declarationExpression.Type);
                     if (IsErrorType(typeInfo.Type))
                     {
-                        var designation = declarationExpression.Designation as SingleVariableDesignationSyntax;
-                        if (designation != null)
+                        if (declarationExpression.Designation is SingleVariableDesignationSyntax designation)
                         {
                             errorVariables.Add(new ErrorVariable(designation.Identifier.Text, designation));
                         }
@@ -112,12 +107,10 @@ namespace Errgo.Analyzer
                 }
                 else
                 {
-                    var identifier = argument.Expression as IdentifierNameSyntax;
-                    if (identifier != null)
+                    if (argument.Expression is IdentifierNameSyntax identifier)
                     {
                         var symbolInfo = context.SemanticModel.GetSymbolInfo(identifier);
-                        var localSymbol = symbolInfo.Symbol as ILocalSymbol;
-                        if (localSymbol != null && IsErrorType(localSymbol.Type))
+                        if (symbolInfo.Symbol is ILocalSymbol localSymbol && IsErrorType(localSymbol.Type))
                         {
                             errorVariables.Add(new ErrorVariable(identifier.Identifier.Text, identifier));
                         }
@@ -159,20 +152,19 @@ namespace Errgo.Analyzer
         private static bool IsDirectErrorInstantiation(ExpressionSyntax expression)
         {
             // Check for new Error(...)
-            var objectCreation = expression as ObjectCreationExpressionSyntax;
-            if (objectCreation != null)
+            if (expression is ObjectCreationExpressionSyntax objectCreation)
             {
                 var typeName = objectCreation.Type.ToString();
                 return typeName == "Error" || typeName == "Errgo.Error";
             }
 
             // Check for Error.None or Error.Empty
-            var memberAccess = expression as MemberAccessExpressionSyntax;
-            if (memberAccess != null)
+            if (expression is MemberAccessExpressionSyntax memberAccess)
             {
                 var leftType = memberAccess.Expression.ToString();
                 var memberName = memberAccess.Name.ToString();
-                if ((leftType == "Error" || leftType == "Errgo.Error") && 
+
+                if ((leftType == "Error" || leftType == "Errgo.Error") &&
                     (memberName == "None" || memberName == "Empty"))
                 {
                     return true;
@@ -195,22 +187,19 @@ namespace Errgo.Analyzer
 
         private static IList<StatementSyntax> GetStatements(SyntaxNode node)
         {
-            var block = node as BlockSyntax;
-            if (block != null) return block.Statements.ToList();
+            if (node is BlockSyntax block) 
+                return block.Statements.ToList();
 
-            var switchSection = node as SwitchSectionSyntax;
-            if (switchSection != null) return switchSection.Statements.ToList();
+            if (node is SwitchSectionSyntax switchSection) 
+                return switchSection.Statements.ToList();
 
             return null;
         }
 
         private static bool IsErrorCheckedInIfStatement(StatementSyntax statement, string errorVarName)
         {
-            var ifStatement = statement as IfStatementSyntax;
-            if (ifStatement != null)
-            {
+            if (statement is IfStatementSyntax ifStatement)
                 return IsErrorCheckedInExpression(ifStatement.Condition, errorVarName);
-            }
 
             return false;
         }
@@ -218,22 +207,19 @@ namespace Errgo.Analyzer
         private static bool IsErrorCheckedInExpression(ExpressionSyntax expression, string errorVarName)
         {
             // Direct identifier check: if (err)
-            var identifier = expression as IdentifierNameSyntax;
-            if (identifier != null && identifier.Identifier.Text == errorVarName)
+            if (expression is IdentifierNameSyntax identifier && identifier.Identifier.Text == errorVarName)
             {
                 return true;
             }
 
             // Prefix unary (logical not): if (!err)
-            var prefixUnary = expression as PrefixUnaryExpressionSyntax;
-            if (prefixUnary != null && prefixUnary.IsKind(SyntaxKind.LogicalNotExpression))
+            if (expression is PrefixUnaryExpressionSyntax prefixUnary && prefixUnary.IsKind(SyntaxKind.LogicalNotExpression))
             {
                 return IsErrorCheckedInExpression(prefixUnary.Operand, errorVarName);
             }
 
             // Binary expressions: if (err != null), if (err == Error.None), etc.
-            var binary = expression as BinaryExpressionSyntax;
-            if (binary != null)
+            if (expression is BinaryExpressionSyntax binary)
             {
                 var leftMentioned = binary.Left.DescendantNodesAndSelf()
                     .OfType<IdentifierNameSyntax>()
@@ -247,17 +233,16 @@ namespace Errgo.Analyzer
             }
 
             // Parenthesized expression
-            var parenthesized = expression as ParenthesizedExpressionSyntax;
-            if (parenthesized != null)
+            if (expression is ParenthesizedExpressionSyntax parenthesized)
             {
                 return IsErrorCheckedInExpression(parenthesized.Expression, errorVarName);
             }
 
             // Logical AND/OR expressions
-            if (expression.IsKind(SyntaxKind.LogicalAndExpression) || expression.IsKind(SyntaxKind.LogicalOrExpression))
+            if (expression.IsKind(SyntaxKind.LogicalAndExpression) || 
+                expression.IsKind(SyntaxKind.LogicalOrExpression))
             {
-                var logicalBinary = expression as BinaryExpressionSyntax;
-                if (logicalBinary != null)
+                if (expression is BinaryExpressionSyntax logicalBinary)
                 {
                     return IsErrorCheckedInExpression(logicalBinary.Left, errorVarName) ||
                            IsErrorCheckedInExpression(logicalBinary.Right, errorVarName);
@@ -267,7 +252,7 @@ namespace Errgo.Analyzer
             return false;
         }
 
-        private struct ErrorVariable
+        private readonly struct ErrorVariable
         {
             public string Name { get; }
             public SyntaxNode Node { get; }
