@@ -48,7 +48,17 @@ namespace Errgo.Analyzer
                 if (variable.Initializer == null) continue;
 
                 var typeInfo = context.SemanticModel.GetTypeInfo(declaration.Declaration.Type);
-                if (IsErrorType(typeInfo.Type)) CheckErrorVariable(context, variable.Identifier.Text, variable, declaration);
+                if (IsErrorType(typeInfo.Type))
+                {
+                    // Skip if it's a direct error instantiation (new Error(...))
+                    var initializerExpression = variable.Initializer.Value;
+                    if (IsDirectErrorInstantiation(initializerExpression))
+                    {
+                        continue; // Don't check errors that are explicitly created
+                    }
+
+                    CheckErrorVariable(context, variable.Identifier.Text, variable, declaration);
+                }
             }
         }
 
@@ -139,17 +149,42 @@ namespace Errgo.Analyzer
 
             var nextStatement = statements[currentIndex + 1];
 
-            if (!IsErrorCheckedInStatement(nextStatement, errorVarName))
+            if (!IsErrorCheckedInIfStatement(nextStatement, errorVarName))
             {
                 var diagnostic = Diagnostic.Create(Rule, errorNode.GetLocation(), errorVarName);
                 context.ReportDiagnostic(diagnostic);
             }
         }
 
+        private static bool IsDirectErrorInstantiation(ExpressionSyntax expression)
+        {
+            // Check for new Error(...)
+            var objectCreation = expression as ObjectCreationExpressionSyntax;
+            if (objectCreation != null)
+            {
+                var typeName = objectCreation.Type.ToString();
+                return typeName == "Error" || typeName == "Errgo.Error";
+            }
+
+            // Check for Error.None or Error.Empty
+            var memberAccess = expression as MemberAccessExpressionSyntax;
+            if (memberAccess != null)
+            {
+                var leftType = memberAccess.Expression.ToString();
+                var memberName = memberAccess.Name.ToString();
+                if ((leftType == "Error" || leftType == "Errgo.Error") && 
+                    (memberName == "None" || memberName == "Empty"))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsErrorType(ITypeSymbol type)
         {
             if (type == null) return false;
-
             if (type.Name != "Error") return false;
 
             var namespaceSymbol = type.ContainingNamespace;
@@ -169,11 +204,13 @@ namespace Errgo.Analyzer
             return null;
         }
 
-        private static bool IsErrorCheckedInStatement(StatementSyntax statement, string errorVarName)
+        private static bool IsErrorCheckedInIfStatement(StatementSyntax statement, string errorVarName)
         {
-            // Only if statements count as checking the error
             var ifStatement = statement as IfStatementSyntax;
-            if (ifStatement != null) return IsErrorCheckedInExpression(ifStatement.Condition, errorVarName);
+            if (ifStatement != null)
+            {
+                return IsErrorCheckedInExpression(ifStatement.Condition, errorVarName);
+            }
 
             return false;
         }
