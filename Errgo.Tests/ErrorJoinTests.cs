@@ -110,7 +110,7 @@ public class ErrorJoinTests
         var err3 = new Error("Error 3");
 
         var joiner = new Error("Joiner");
-        joiner.Join(err3, err2); // err2 has its own chain
+        joiner.Join(err3, err2); // err2 has its own inner errors
 
         var innerErrors = joiner.InnerErrors;
 
