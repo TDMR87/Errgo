@@ -26,8 +26,7 @@ namespace Errgo.Analyzer
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true, 
             description: Description,
-            helpLinkUri: null,
-            customTags: WellKnownDiagnosticTags.Unnecessary);
+            helpLinkUri: null);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
 
