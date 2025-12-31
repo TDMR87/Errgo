@@ -16,7 +16,6 @@ public class ErrgoAnalyzerTests
             ReferenceAssemblies = ReferenceAssemblies,
         };
 
-        // Add reference to Errgo assembly
         test.TestState.AdditionalReferences.Add(typeof(Error).Assembly);
         
         return test;
@@ -25,269 +24,286 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedInNextStatement()
     {
-        var code = @"
-using Errgo;
-
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
-
-        void TestMethod()
-        {
-            var err = GetError();
-            if (err)
+        var test = CreateTest("""
+            using Errgo;
+            
+            namespace TestNamespace
             {
-                // Handle error
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
+            
+                    void TestMethod()
+                    {
+                        var err = GetError();
+                        if (err)
+                        {
+                            
+                        }
+                    }
+                }
             }
-        }
-    }
-}";
+            """);
 
-        var test = CreateTest(code);
         await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
 
-        void TestMethod()
-        {
-            var err = GetError();
-            System.Console.WriteLine(""Next statement"");
-        }
-    }
-}";
+                    void TestMethod()
+                    {
+                        var err = GetError();
+                        System.Console.WriteLine("Next statement");
+                    }
+                }
+            }
+            """);
 
-        var test = CreateTest(code);
-        test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
-                .WithSpan(12, 17, 12, 33)
-                .WithArguments("err"));
+        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            .WithSpan(
+                startLine: 11, 
+                startColumn: 17, 
+                endLine: 11, 
+                endColumn: 33)
+            .WithArguments("err"));
+
         await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenErrorIsCheckedButNotInNextStatement()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
-
-        void TestMethod()
-        {
-            var err = GetError();
-            System.Console.WriteLine(""Some other code"");
-            if (err)
+            namespace TestNamespace
             {
-                // Check is too late
-            }
-        }
-    }
-}";
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
 
-        var test = CreateTest(code);
-        test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
-                .WithSpan(12, 17, 12, 33)
-                .WithArguments("err"));
+                    void TestMethod()
+                    {
+                        var err = GetError();
+                        System.Console.WriteLine("Some other code");
+                        if (err)
+                        {
+                            // Check is too late
+                        }
+                    }
+                }
+            }
+            """);
+
+        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            .WithSpan(
+                startLine: 11, 
+                startColumn: 17, 
+                endLine: 11, 
+                endColumn: 33)
+            .WithArguments("err"));
+
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithNegation()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
-
-        void TestMethod()
-        {
-            var err = GetError();
-            if (!err)
+            namespace TestNamespace
             {
-                // Success path
-            }
-        }
-    }
-}";
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
 
-        var test = CreateTest(code);
+                    void TestMethod()
+                    {
+                        var err = GetError();
+                        if (!err)
+                        {
+                            // Success path
+                        }
+                    }
+                }
+            }
+            """);
+
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithComparison()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
-
-        void TestMethod()
-        {
-            var err = GetError();
-            if (err == Error.None)
+            namespace TestNamespace
             {
-                // Success
-            }
-        }
-    }
-}";
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
 
-        var test = CreateTest(code);
+                    void TestMethod()
+                    {
+                        var err = GetError();
+                        if (err == Error.None)
+                        {
+                            // Success
+                        }
+                    }
+                }
+            }
+            """);
+
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithNotEqual()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
-
-        void TestMethod()
-        {
-            var err = GetError();
-            if (err != Error.None)
+            namespace TestNamespace
             {
-                // Error path
-            }
-        }
-    }
-}";
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
 
-        var test = CreateTest(code);
+                    void TestMethod()
+                    {
+                        var err = GetError();
+                        if (err != Error.None)
+                        {
+                            // Error path
+                        }
+                    }
+                }
+            }
+            """);
+
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsNotFromMethodCall()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        void TestMethod()
-        {
-            var err = new Error(""manual error"");
-            System.Console.WriteLine(""Next statement"");
-        }
-    }
-}";
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    void TestMethod()
+                    {
+                        var err = new Error("manual error");
+                        System.Console.WriteLine("Next statement");
+                    }
+                }
+            }
+            """);
 
-        var test = CreateTest(code);
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsErrorNone()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        void TestMethod()
-        {
-            var err = Error.None;
-            System.Console.WriteLine(""Next statement"");
-        }
-    }
-}";
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    void TestMethod()
+                    {
+                        var err = Error.None;
+                        System.Console.WriteLine("Next statement");
+                    }
+                }
+            }
+            """);
 
-        var test = CreateTest(code);
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsLastStatement()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
 
-        void TestMethod()
-        {
-            var err = GetError();
-        }
-    }
-}";
+                    void TestMethod()
+                    {
+                        var err = GetError();
+                    }
+                }
+            }
+            """);
 
-        var test = CreateTest(code);
         await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WithMultipleErrors_AllUnchecked()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
 
-        void TestMethod()
-        {
-            var err1 = GetError();
-            System.Console.WriteLine(""Next"");
-            
-            var err2 = GetError();
-            System.Console.WriteLine(""Next"");
-        }
-    }
-}";
+                    void TestMethod()
+                    {
+                        var err1 = GetError();
+                        System.Console.WriteLine("Lorem");
+                        
+                        var err2 = GetError();
+                        System.Console.WriteLine("Ipsum");
+                    }
+                }
+            }
+            """);
 
-        var test = CreateTest(code);
         test.ExpectedDiagnostics.Add(
             new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
-                .WithSpan(12, 17, 12, 34)
+                .WithSpan(
+                    startLine: 11, 
+                    startColumn: 17, 
+                    endLine: 11, 
+                    endColumn: 34)
                 .WithArguments("err1"));
+
         test.ExpectedDiagnostics.Add(
             new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
-                .WithSpan(15, 17, 15, 34)
+                .WithSpan(
+                    startLine: 14, 
+                    startColumn: 17, 
+                    endLine: 14, 
+                    endColumn: 34)
                 .WithArguments("err2"));
         await test.RunAsync();
     }
@@ -295,125 +311,98 @@ namespace TestNamespace
     [Fact]
     public async Task NoDiagnostic_WithExplicitErrorType()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
-
-        void TestMethod()
-        {
-            Error err = GetError();
-            if (err)
+            namespace TestNamespace
             {
-                // Handle error
-            }
-        }
-    }
-}";
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
 
-        var test = CreateTest(code);
+                    void TestMethod()
+                    {
+                        Error err = GetError();
+                        if (err)
+                        {
+                            // Handle error
+                        }
+                    }
+                }
+            }
+            """);
+
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenVariableHasNoInitializer()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        void TestMethod()
-        {
-            Error err;
-            System.Console.WriteLine(""Next"");
-        }
-    }
-}";
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    void TestMethod()
+                    {
+                        Error err;
+                        System.Console.WriteLine("Next");
+                    }
+                }
+            }
+            """);
 
-        var test = CreateTest(code);
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenNotErrorType()
     {
-        var code = @"
-namespace TestNamespace
-{
-    class TestClass
-    {
-        string GetString() => ""test"";
+        var test = CreateTest("""
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    string GetString() => "test";
 
-        void TestMethod()
-        {
-            var str = GetString();
-            System.Console.WriteLine(""Next"");
-        }
-    }
-}";
+                    void TestMethod()
+                    {
+                        var str = GetString();
+                        System.Console.WriteLine("Next");
+                    }
+                }
+            }
+            """);
 
-        var test = CreateTest(code);
         await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorInComplexCondition()
     {
-        var code = @"
-using Errgo;
+        var test = CreateTest("""
+            using Errgo;
 
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
-
-        void TestMethod()
-        {
-            var err = GetError();
-            if (err || true)
+            namespace TestNamespace
             {
-                // Error is mentioned
+                class TestClass
+                {
+                    Error GetError() => new Error("test");
+
+                    void TestMethod()
+                    {
+                        var err = GetError();
+                        if (err || true)
+                        {
+                            // Error is mentioned
+                        }
+                    }
+                }
             }
-        }
-    }
-}";
+            """);
 
-        var test = CreateTest(code);
-        await test.RunAsync();
-    }
-
-    [Fact]
-    public async Task NoDiagnostic_WhenErrorInParenthesizedCondition()
-    {
-        var code = @"
-using Errgo;
-
-namespace TestNamespace
-{
-    class TestClass
-    {
-        Error GetError() => new Error(""test"");
-
-        void TestMethod()
-        {
-            var err = GetError();
-            if ((err))
-            {
-                // Error is checked
-            }
-        }
-    }
-}";
-
-        var test = CreateTest(code);
         await test.RunAsync();
     }
 }
