@@ -2,6 +2,7 @@
   <Folder Name="/Analyzers/">
     <Project Path="Errgo.Analyzer/Errgo.Analyzer.CodeFixes/Errgo.Analyzer.CodeFixes.csproj" Id="0df385d9-27dd-4653-b8a2-d6692bb52a44" />
     <Project Path="Errgo.Analyzer/Errgo.Analyzer.Package/Errgo.Analyzer.Package.csproj" Id="694e6b61-5015-4313-a1ce-05674b5aa793" />
+    <Project Path="Errgo.Analyzer/Errgo.Analyzer.Tests/Errgo.Analyzer.Tests.csproj" />
     <Project Path="Errgo.Analyzer/Errgo.Analyzer.Vsix/Errgo.Analyzer.Vsix.csproj" Id="3d3a5163-574d-4dfd-9899-79845af282c8" />
     <Project Path="Errgo.Analyzer/Errgo.Analyzer/Errgo.Analyzer.csproj" Id="f70863dd-78f0-4ca1-8f18-6097c355ab67" />
   </Folder>
