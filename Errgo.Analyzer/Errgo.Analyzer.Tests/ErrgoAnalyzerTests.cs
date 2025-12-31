@@ -113,6 +113,76 @@ public class ErrgoAnalyzerTests
     }
 
     [Fact]
+    public async Task Diagnostic_WhenErrorIsNotChecked_Tuple2()
+    {
+        var test = CreateTest("""
+            using Errgo;
+
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    (string, Error) GetStringOrError() => (string.Empty, new Error("test"));
+
+                    void TestMethod()
+                    {
+                        var (str, err) = GetStringOrError();
+                        System.Console.WriteLine("Lorem ipsum");
+                    }
+                }
+            }
+            """);
+
+        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            .WithSpan(
+                startLine: 11,
+                startColumn: 23,
+                endLine: 11,
+                endColumn: 26)
+            .WithArguments("err"));
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task Diagnostic_WhenErrorIsNotChecked_Tuple3()
+    {
+        var test = CreateTest("""
+            using Errgo;
+
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    (string, Error) GetStringOrError() => (string.Empty, new Error("test"));
+
+                    void TestMethod()
+                    {
+                        var (str, err) = GetStringOrError();
+                        if (err)
+                        {
+                            // Handle error
+                        }
+
+                        (str, err) = GetStringOrError();
+                        System.Console.WriteLine("Lorem ipsum");
+                    }
+                }
+            }
+            """);
+
+        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            .WithSpan(
+                startLine: 17,
+                startColumn: 19,
+                endLine: 17,
+                endColumn: 22)
+            .WithArguments("err"));
+
+        await test.RunAsync();
+    }
+
+    [Fact]
     public async Task Diagnostic_WhenErrorIsCheckedButNotInNextStatement()
     {
         var test = CreateTest("""

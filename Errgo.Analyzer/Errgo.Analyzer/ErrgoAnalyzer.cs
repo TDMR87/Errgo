@@ -58,9 +58,6 @@ namespace Errgo.Analyzer
         {
             var assignment = (AssignmentExpressionSyntax)context.Node;
             
-            // Check if left side is a tuple deconstruction
-            if (!(assignment.Left is TupleExpressionSyntax tupleExpression)) return;
-            
             // Check if right side is a method call
             if (!IsMethodCall(assignment.Right)) return;
 
@@ -68,8 +65,25 @@ namespace Errgo.Analyzer
             var statement = assignment.FirstAncestorOrSelf<StatementSyntax>();
             if (statement == null) return;
 
-            // Check each element in the tuple for Error types
-            foreach (var argument in tupleExpression.Arguments)
+            // Handle: (var str, var err) = GetData()
+            if (assignment.Left is TupleExpressionSyntax tupleExpression)
+            {
+                AnalyzeTupleElements(context, tupleExpression.Arguments, statement);
+            }
+            // Handle: var (str, err) = GetData()
+            else if (assignment.Left is DeclarationExpressionSyntax declExpr && 
+                     declExpr.Designation is ParenthesizedVariableDesignationSyntax parenDesignation)
+            {
+                AnalyzeParenthesizedDesignation(context, parenDesignation, statement);
+            }
+        }
+
+        private static void AnalyzeTupleElements(
+            SyntaxNodeAnalysisContext context,
+            SeparatedSyntaxList<ArgumentSyntax> arguments,
+            StatementSyntax statement)
+        {
+            foreach (var argument in arguments)
             {
                 string variableName = null;
                 SyntaxNode variableNode = null;
@@ -103,6 +117,29 @@ namespace Errgo.Analyzer
                     {
                         var diagnostic = Diagnostic.Create(Rule, variableNode.GetLocation(), variableName);
                         context.ReportDiagnostic(diagnostic);
+                    }
+                }
+            }
+        }
+
+        private static void AnalyzeParenthesizedDesignation(
+            SyntaxNodeAnalysisContext context,
+            ParenthesizedVariableDesignationSyntax designation,
+            StatementSyntax statement)
+        {
+            foreach (var variable in designation.Variables)
+            {
+                if (variable is SingleVariableDesignationSyntax singleVar)
+                {
+                    var symbol = context.SemanticModel.GetDeclaredSymbol(singleVar);
+                    if (symbol is ILocalSymbol localSymbol && IsErrorType(localSymbol.Type))
+                    {
+                        var variableName = singleVar.Identifier.Text;
+                        if (!IsErrorChecked(statement, variableName))
+                        {
+                            var diagnostic = Diagnostic.Create(Rule, singleVar.GetLocation(), variableName);
+                            context.ReportDiagnostic(diagnostic);
+                        }
                     }
                 }
             }
