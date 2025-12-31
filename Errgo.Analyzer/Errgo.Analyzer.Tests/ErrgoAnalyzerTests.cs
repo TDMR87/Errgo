@@ -63,7 +63,7 @@ public class ErrgoAnalyzerTests
                     void TestMethod()
                     {
                         var err = GetError();
-                        System.Console.WriteLine("Next statement");
+                        System.Console.WriteLine("Lorem ipsum");
                     }
                 }
             }
@@ -95,7 +95,7 @@ public class ErrgoAnalyzerTests
                     void TestMethod()
                     {
                         var err = GetError();
-                        System.Console.WriteLine("Some other code");
+                        System.Console.WriteLine("Lorem ipsum");
                         if (err)
                         {
                             // Check is too late
@@ -210,7 +210,7 @@ public class ErrgoAnalyzerTests
                     void TestMethod()
                     {
                         var err = new Error("manual error");
-                        System.Console.WriteLine("Next statement");
+                        System.Console.WriteLine("Lorem ipsum");
                     }
                 }
             }
@@ -220,7 +220,7 @@ public class ErrgoAnalyzerTests
     }
 
     [Fact]
-    public async Task NoDiagnostic_WhenErrorIsErrorNone()
+    public async Task NoDiagnostic_WhenErrorNone()
     {
         var test = CreateTest("""
             using Errgo;
@@ -232,7 +232,7 @@ public class ErrgoAnalyzerTests
                     void TestMethod()
                     {
                         var err = Error.None;
-                        System.Console.WriteLine("Next statement");
+                        System.Console.WriteLine("Lorem ipsum");
                     }
                 }
             }
@@ -242,7 +242,29 @@ public class ErrgoAnalyzerTests
     }
 
     [Fact]
-    public async Task NoDiagnostic_WhenErrorIsLastStatement()
+    public async Task NoDiagnostic_WhenErrorEmpty()
+    {
+        var test = CreateTest("""
+            using Errgo;
+
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    void TestMethod()
+                    {
+                        var err = Error.Empty;
+                        System.Console.WriteLine("Lorem ipsum");
+                    }
+                }
+            }
+            """);
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NoDiagnostic_WhenErrorIsLastStatementInVoidMethod()
     {
         var test = CreateTest("""
             using Errgo;
@@ -309,7 +331,7 @@ public class ErrgoAnalyzerTests
     }
 
     [Fact]
-    public async Task NoDiagnostic_WithExplicitErrorType()
+    public async Task NoDiagnostic_WhenChecked_WithExplicitErrorType()
     {
         var test = CreateTest("""
             using Errgo;
@@ -348,29 +370,7 @@ public class ErrgoAnalyzerTests
                     void TestMethod()
                     {
                         Error err;
-                        System.Console.WriteLine("Next");
-                    }
-                }
-            }
-            """);
-
-        await test.RunAsync();
-    }
-
-    [Fact]
-    public async Task NoDiagnostic_WhenNotErrorType()
-    {
-        var test = CreateTest("""
-            namespace TestNamespace
-            {
-                class TestClass
-                {
-                    string GetString() => "test";
-
-                    void TestMethod()
-                    {
-                        var str = GetString();
-                        System.Console.WriteLine("Next");
+                        System.Console.WriteLine("Lorem ipsum");
                     }
                 }
             }

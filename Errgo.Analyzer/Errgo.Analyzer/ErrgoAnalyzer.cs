@@ -70,8 +70,23 @@ namespace Errgo.Analyzer
             var index = statements.Value.IndexOf(statement);
             if (index < 0) return false;
             
-            // If this is the last statement, no check is needed
-            if (index >= statements.Value.Count - 1) return true;
+            // If this is the last statement, only allow it if we're in a void method or constructor
+            if (index >= statements.Value.Count - 1)
+            {
+                var containingMethod = statement.FirstAncestorOrSelf<BaseMethodDeclarationSyntax>();
+                if (containingMethod is MethodDeclarationSyntax methodDecl)
+                {
+                    // Allow if void method
+                    return methodDecl.ReturnType.ToString() == "void";
+                }
+                // Allow for constructors
+                if (containingMethod is ConstructorDeclarationSyntax)
+                {
+                    return true;
+                }
+                // Otherwise warn (e.g., in methods that return Error)
+                return false;
+            }
 
             var nextStatement = statements.Value[index + 1];
 
@@ -82,6 +97,15 @@ namespace Errgo.Analyzer
                     .DescendantNodesAndSelf()
                     .OfType<IdentifierNameSyntax>()
                     .Any(id => id.Identifier.Text == errorVarName);
+            }
+
+            // Check if next statement is a return statement that returns the error
+            if (nextStatement is ReturnStatementSyntax returnStatement)
+            {
+                return returnStatement.Expression
+                    ?.DescendantNodesAndSelf()
+                    .OfType<IdentifierNameSyntax>()
+                    .Any(id => id.Identifier.Text == errorVarName) ?? false;
             }
 
             return false;
