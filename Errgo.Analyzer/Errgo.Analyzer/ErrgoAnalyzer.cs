@@ -68,7 +68,10 @@ namespace Errgo.Analyzer
             if (statements == null) return false;
 
             var index = statements.Value.IndexOf(statement);
-            if (index < 0 || index >= statements.Value.Count - 1) return false;
+            if (index < 0) return false;
+            
+            // If this is the last statement, no check is needed
+            if (index >= statements.Value.Count - 1) return true;
 
             var nextStatement = statements.Value[index + 1];
 
