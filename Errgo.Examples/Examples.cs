@@ -40,6 +40,16 @@ public class Examples
         }
     }
 
+    void ExampleUsage()
+    {
+        var error = DoStuff();
+    }
+
+    Error DoStuff()
+    {
+        return new Error("Something went wrong");
+    }
+
     private async Task<(string, Error)> GenerateUniqueGameSessionHash(int maxAttempts = 10)
     {
         for (int attempt = 0; attempt < maxAttempts; attempt++)
