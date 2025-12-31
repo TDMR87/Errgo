@@ -29,6 +29,7 @@ namespace Errgo.Analyzer
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.LocalDeclarationStatement);
+            context.RegisterSyntaxNodeAction(AnalyzeTupleDeconstruction, SyntaxKind.SimpleAssignmentExpression);
         }
 
         private static void AnalyzeNode(SyntaxNodeAnalysisContext context)
@@ -50,6 +51,60 @@ namespace Errgo.Analyzer
 
                 var diagnostic = Diagnostic.Create(Rule, variable.GetLocation(), variableName);
                 context.ReportDiagnostic(diagnostic);
+            }
+        }
+
+        private static void AnalyzeTupleDeconstruction(SyntaxNodeAnalysisContext context)
+        {
+            var assignment = (AssignmentExpressionSyntax)context.Node;
+            
+            // Check if left side is a tuple deconstruction
+            if (!(assignment.Left is TupleExpressionSyntax tupleExpression)) return;
+            
+            // Check if right side is a method call
+            if (!IsMethodCall(assignment.Right)) return;
+
+            // Find the statement containing this assignment
+            var statement = assignment.FirstAncestorOrSelf<StatementSyntax>();
+            if (statement == null) return;
+
+            // Check each element in the tuple for Error types
+            foreach (var argument in tupleExpression.Arguments)
+            {
+                string variableName = null;
+                SyntaxNode variableNode = null;
+
+                // Handle: (var err, ...)
+                if (argument.Expression is DeclarationExpressionSyntax declExpr)
+                {
+                    var typeInfo = context.SemanticModel.GetTypeInfo(declExpr.Type);
+                    if (!IsErrorType(typeInfo.Type)) continue;
+
+                    if (declExpr.Designation is SingleVariableDesignationSyntax designation)
+                    {
+                        variableName = designation.Identifier.Text;
+                        variableNode = designation;
+                    }
+                }
+                // Handle: (err, ...) where err is already declared
+                else if (argument.Expression is IdentifierNameSyntax identifier)
+                {
+                    var symbolInfo = context.SemanticModel.GetSymbolInfo(identifier);
+                    if (symbolInfo.Symbol is ILocalSymbol localSymbol && IsErrorType(localSymbol.Type))
+                    {
+                        variableName = identifier.Identifier.Text;
+                        variableNode = identifier;
+                    }
+                }
+
+                if (variableName != null && variableNode != null)
+                {
+                    if (!IsErrorChecked(statement, variableName))
+                    {
+                        var diagnostic = Diagnostic.Create(Rule, variableNode.GetLocation(), variableName);
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                }
             }
         }
 

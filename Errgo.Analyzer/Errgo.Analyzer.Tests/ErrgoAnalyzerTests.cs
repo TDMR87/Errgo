@@ -81,6 +81,38 @@ public class ErrgoAnalyzerTests
     }
 
     [Fact]
+    public async Task Diagnostic_WhenErrorIsNotChecked_Tuple()
+    {
+        var test = CreateTest("""
+            using Errgo;
+
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    (string, Error) GetStringOrError() => (string.Empty, new Error("test"));
+
+                    void TestMethod()
+                    {
+                        (var str, var err) = GetStringOrError();
+                        System.Console.WriteLine("Lorem ipsum");
+                    }
+                }
+            }
+            """);
+
+        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            .WithSpan(
+                startLine: 11,
+                startColumn: 27,
+                endLine: 11,
+                endColumn: 30)
+            .WithArguments("err"));
+
+        await test.RunAsync();
+    }
+
+    [Fact]
     public async Task Diagnostic_WhenErrorIsCheckedButNotInNextStatement()
     {
         var test = CreateTest("""
