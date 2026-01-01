@@ -74,7 +74,7 @@ public class ErrgoAnalyzerTests
                 startLine: 11, 
                 startColumn: 17, 
                 endLine: 11, 
-                endColumn: 33)
+                endColumn: 20)
             .WithArguments("err"));
 
         await test.RunAsync();
@@ -212,7 +212,7 @@ public class ErrgoAnalyzerTests
                 startLine: 11, 
                 startColumn: 17, 
                 endLine: 11, 
-                endColumn: 33)
+                endColumn: 20)
             .WithArguments("err"));
 
         await test.RunAsync();
@@ -418,7 +418,7 @@ public class ErrgoAnalyzerTests
                     startLine: 11, 
                     startColumn: 17, 
                     endLine: 11, 
-                    endColumn: 34)
+                    endColumn: 21)
                 .WithArguments("err1"));
 
         test.ExpectedDiagnostics.Add(
@@ -427,7 +427,7 @@ public class ErrgoAnalyzerTests
                     startLine: 14, 
                     startColumn: 17, 
                     endLine: 14, 
-                    endColumn: 34)
+                    endColumn: 21)
                 .WithArguments("err2"));
         await test.RunAsync();
     }
@@ -504,6 +504,72 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task Diagnostic_WhenAwaitedErrorIsNotChecked()
+    {
+        var test = CreateTest("""
+            using Errgo;
+            using System.Threading.Tasks;
+
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    async Task<Error> GetErrorAsync() => new Error("test");
+
+                    async Task TestMethod()
+                    {
+                        var err = await GetErrorAsync();
+                        System.Console.WriteLine("Lorem ipsum");
+                    }
+                }
+            }
+            """);
+
+        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            .WithSpan(
+                startLine: 12,
+                startColumn: 17,
+                endLine: 12,
+                endColumn: 20)
+            .WithArguments("err"));
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task Diagnostic_WhenAwaitedTupleErrorIsNotChecked()
+    {
+        var test = CreateTest("""
+            using Errgo;
+            using System.Threading.Tasks;
+
+            namespace TestNamespace
+            {
+                class TestClass
+                {
+                    async Task<(string, Error)> GetDataAsync() => (string.Empty, new Error("test"));
+
+                    async Task TestMethod()
+                    {
+                        var (data, err) = await GetDataAsync();
+                        System.Console.WriteLine("Lorem ipsum");
+                    }
+                }
+            }
+            """);
+
+        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            .WithSpan(
+                startLine: 12,
+                startColumn: 24,
+                endLine: 12,
+                endColumn: 27)
+            .WithArguments("err"));
 
         await test.RunAsync();
     }

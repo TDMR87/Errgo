@@ -49,7 +49,7 @@ namespace Errgo.Analyzer
 
                 if (IsErrorChecked(declaration, variableName)) continue;
 
-                var diagnostic = Diagnostic.Create(Rule, variable.GetLocation(), variableName);
+                var diagnostic = Diagnostic.Create(Rule, variable.Identifier.GetLocation(), variableName);
                 context.ReportDiagnostic(diagnostic);
             }
         }
@@ -148,8 +148,19 @@ namespace Errgo.Analyzer
         private static bool IsErrorType(ITypeSymbol type) 
             => type?.Name == "Error" && type.ContainingNamespace?.ToString() == "Errgo";
 
-        private static bool IsMethodCall(ExpressionSyntax expression) 
-            => expression is InvocationExpressionSyntax;
+        private static bool IsMethodCall(ExpressionSyntax expression)
+        {
+            // Direct method call: GetError()
+            if (expression is InvocationExpressionSyntax)
+                return true;
+            
+            // Awaited method call: await GetError()
+            if (expression is AwaitExpressionSyntax awaitExpr && 
+                awaitExpr.Expression is InvocationExpressionSyntax)
+                return true;
+            
+            return false;
+        }
 
         private static bool IsErrorChecked(StatementSyntax statement, string errorVarName)
         {

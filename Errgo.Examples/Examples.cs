@@ -23,7 +23,7 @@ public class Examples
         (var gameSession, err) = await AddGameSession(hash, cancellationToken);
         if (err) return (null, err);
 
-        return (gameSession, Error.None);
+        return (new GameSession(hash), Error.None);
     }
 
     private async Task<(GameSession?, Error)> AddGameSession(string hash, CancellationToken cancellationToken)
