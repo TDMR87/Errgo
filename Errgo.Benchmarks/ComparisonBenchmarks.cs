@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Order;
 using ErrorOr;
+using FluentResults;
 using Ardalis.Result;
 
 namespace Errgo.Benchmarks;
@@ -22,6 +23,13 @@ public class ComparisonBenchmarks
     public Errgo.Error PropagateThroughDeepCallStack_Errgo()
     {
         var err = DeepCallStack_Errgo_1();
+        return err;
+    }
+
+    [Benchmark(Description = "Propagate through 10 method calls - LightResults")]
+    public LightResults.Result PropagateThroughDeepCallStack_LightResults()
+    {
+        var err = DeepCallStack_LightResults_1();
         return err;
     }
 
@@ -58,7 +66,7 @@ public class ComparisonBenchmarks
     [Benchmark(Description = "Return unsuccessful result - Ardalis")]
     public Ardalis.Result.Result<int> CreateError_Ardalis()
     {
-        return Result<int>.Error("Operation failed");
+        return Ardalis.Result.Result<int>.Error("Operation failed");
     }
 
     [Benchmark(Description = "Return unsuccessful result - Errgo")]
@@ -77,6 +85,12 @@ public class ComparisonBenchmarks
     public FluentResults.Result CreateError_FluentResults()
     {
         return FluentResults.Result.Fail("Operation failed");
+    }
+
+    [Benchmark(Description = "Return unsuccessful result - LightResults")]
+    public LightResults.Result CreateError_LightResults()
+    {
+        return new LightResults.Error("Operation failed");
     }
 
     [Benchmark(Description = "Return unsuccessful result (throw) - Exception")]
@@ -100,7 +114,7 @@ public class ComparisonBenchmarks
     public Ardalis.Result.Result<int> CreateSuccess_Ardalis()
     {
         var number = GetNumber();
-        return Result<int>.Success(number);
+        return Ardalis.Result.Result<int>.Success(number);
     }
 
     [Benchmark(Description = "Return successful result - Errgo")]
@@ -108,6 +122,13 @@ public class ComparisonBenchmarks
     {
         var number = GetNumber();
         return (number, Error.None);
+    }
+
+    [Benchmark(Description = "Return successful result - LightResults")]
+    public LightResults.Result<int> CreateSuccess_LightResults()
+    {
+        var number = GetNumber();
+        return LightResults.Result.Success(number);
     }
 
     [Benchmark(Description = "Return successful result - ErrorOr")]
@@ -197,16 +218,28 @@ public class ComparisonBenchmarks
     private ErrorOr<int> DeepCallStack_ErrorOr_9() => DeepCallStack_ErrorOr_10();
     private ErrorOr<int> DeepCallStack_ErrorOr_10() => ErrorOr.Error.Failure(description: "Operation failed");
 
-    private Result<int> DeepCallStack_Ardalis_1() => DeepCallStack_Ardalis_2();
-    private Result<int> DeepCallStack_Ardalis_2() => DeepCallStack_Ardalis_3();
-    private Result<int> DeepCallStack_Ardalis_3() => DeepCallStack_Ardalis_4();
-    private Result<int> DeepCallStack_Ardalis_4() => DeepCallStack_Ardalis_5();
-    private Result<int> DeepCallStack_Ardalis_5() => DeepCallStack_Ardalis_6();
-    private Result<int> DeepCallStack_Ardalis_6() => DeepCallStack_Ardalis_7();
-    private Result<int> DeepCallStack_Ardalis_7() => DeepCallStack_Ardalis_8();
-    private Result<int> DeepCallStack_Ardalis_8() => DeepCallStack_Ardalis_9();
-    private Result<int> DeepCallStack_Ardalis_9() => DeepCallStack_Ardalis_10();
-    private Result<int> DeepCallStack_Ardalis_10() => Result<int>.Error("Operation failed");
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_1() => DeepCallStack_Ardalis_2();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_2() => DeepCallStack_Ardalis_3();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_3() => DeepCallStack_Ardalis_4();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_4() => DeepCallStack_Ardalis_5();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_5() => DeepCallStack_Ardalis_6();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_6() => DeepCallStack_Ardalis_7();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_7() => DeepCallStack_Ardalis_8();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_8() => DeepCallStack_Ardalis_9();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_9() => DeepCallStack_Ardalis_10();
+    private Ardalis.Result.Result<int> DeepCallStack_Ardalis_10() => Ardalis.Result.Result<int>.Error("Operation failed");
+
+    private LightResults.Result DeepCallStack_LightResults_1() => DeepCallStack_LightResults_2();
+    private LightResults.Result DeepCallStack_LightResults_2() => DeepCallStack_LightResults_3();
+    private LightResults.Result DeepCallStack_LightResults_3() => DeepCallStack_LightResults_4();
+    private LightResults.Result DeepCallStack_LightResults_4() => DeepCallStack_LightResults_5();
+    private LightResults.Result DeepCallStack_LightResults_5() => DeepCallStack_LightResults_6();
+    private LightResults.Result DeepCallStack_LightResults_6() => DeepCallStack_LightResults_7();
+    private LightResults.Result DeepCallStack_LightResults_7() => DeepCallStack_LightResults_8();
+    private LightResults.Result DeepCallStack_LightResults_8() => DeepCallStack_LightResults_9();
+    private LightResults.Result DeepCallStack_LightResults_9() => DeepCallStack_LightResults_10();
+    private LightResults.Result DeepCallStack_LightResults_10() => new LightResults.Error("Operation failed");
+
 
     private int GetNumber() => 9999;
 }
