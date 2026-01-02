@@ -66,24 +66,28 @@ public class ComparisonBenchmarks
     [Benchmark(Description = "Return unsuccessful result - Ardalis")]
     public Ardalis.Result.Result<int> CreateError_Ardalis()
     {
+        var number = GetNumber();
         return Ardalis.Result.Result<int>.Error("Operation failed");
     }
 
     [Benchmark(Description = "Return unsuccessful result - Errgo")]
-    public Errgo.Error CreateError_Errgo()
+    public (int?, Errgo.Error) CreateError_Errgo()
     {
-        return new Errgo.Error("Operation failed");
+        var number = GetNumber();
+        return (null, new Error("Operation failed"));
     }
 
     [Benchmark(Description = "Return unsuccessful result - ErrorOr")]
     public ErrorOr<int> CreateError_ErrorOr()
     {
+        var number = GetNumber();
         return ErrorOr.Error.Failure(description: "Operation failed");
     }
 
     [Benchmark(Description = "Return unsuccessful result - FluentResults")]
     public FluentResults.Result CreateError_FluentResults()
     {
+        var number = GetNumber();
         return FluentResults.Result.Fail("Operation failed");
     }
 

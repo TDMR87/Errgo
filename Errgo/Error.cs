@@ -10,11 +10,10 @@ internal static class Constants
 public readonly record struct Error
 {
     private readonly bool _isError;
-    private readonly string _message;
-    private readonly string _sourceMemberName;
-    private readonly string _sourceFilePath;
-    private readonly int _sourceLineNumber;
-    //private readonly ErrorChain? _errorChain;
+    private readonly string? _message;
+    private readonly string? _sourceMemberName;
+    private readonly string? _sourceFilePath;
+    private readonly int? _sourceLineNumber;
     private readonly Error[]? _innerErrors;
 
     /// <summary>
@@ -30,7 +29,6 @@ public readonly record struct Error
         _sourceMemberName = string.Empty;
         _sourceFilePath = string.Empty;
         _sourceLineNumber = 0;
-        //_errorChain = null;
         _innerErrors = null;
     }
 
@@ -47,17 +45,16 @@ public readonly record struct Error
     /// in typical usage.
     /// </remarks>
     public Error(
-        string message,
-        [CallerMemberName] string memberName = "",
-        [CallerFilePath] string filePath = "",
-        [CallerLineNumber] int lineNumber = 0)
+        string? message,
+        [CallerMemberName] string? memberName = null,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int? lineNumber = null)
     {
         _isError = true;
         _message = message ?? Constants.UnknownError;
         _sourceMemberName = memberName;
         _sourceFilePath = filePath;
         _sourceLineNumber = lineNumber;
-        //_errorChain = null;
         _innerErrors = null;
     }
 
@@ -78,9 +75,9 @@ public readonly record struct Error
     public Error(
         string message,
         Error error,
-        [CallerMemberName] string memberName = "",
-        [CallerFilePath] string filePath = "",
-        [CallerLineNumber] int lineNumber = 0)
+        [CallerMemberName] string? memberName = null,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int? lineNumber = null)
     {
         _isError = true;
         _message = message ?? Constants.UnknownError;
@@ -90,32 +87,43 @@ public readonly record struct Error
 
         if (!error._isError)
         {
-            //_errorChain = null;
             _innerErrors = null;
             return;
         }
 
-        //_errorChain = new ErrorChain();
-        //_errorChain.Append(error);
         _innerErrors = [error];
     }
 
     /// <summary>
-    /// Returns an non-Error with zeroed values. Use this for returning an Error type
-    /// in cases where no error occurred.
+    /// For internal use only. Creates an Error with the specified isError flag.
     /// </summary>
-    public static Error None => default;
+    /// <param name="isError"></param>
+    private Error(bool isError)
+    {
+        _isError = isError;
+        _message = null;
+        _sourceMemberName = null;
+        _sourceFilePath = null;
+        _sourceLineNumber = null;
+        _innerErrors = null;
+    } 
+
+    /// <summary>
+    /// Returns an non-Error with zeroed values. 
+    /// Use this for returning an Error type when no error occurred.
+    /// </summary>
+    public static Error None => new(isError: false);
 
     /// <summary>
     /// Instantiates a new Error with no messages, no inner errors and no source location information.
-    /// An empty error is still considered an error.
+    /// Note: an empty error is still considered an error.
     /// </summary>
-    public static Error Empty => new(string.Empty, string.Empty, string.Empty, 0);
+    public static Error Empty => new(message: "", null, null, null);
 
     /// <summary>
     /// Gets the message associated with this error, without source location information.
     /// </summary>
-    public string Message => _message;
+    public string Message => _message ?? string.Empty;
 
     /// <summary>
     /// Gets the message associated with this error with source location information.
@@ -135,7 +143,7 @@ public readonly record struct Error
     /// <summary>
     /// Gets the line number where this error occurred.
     /// </summary>
-    public int SourceLineNumber => _sourceLineNumber;
+    public int SourceLineNumber => _sourceLineNumber ?? 0;
 
     /// <summary>
     /// Gets the full error stack as a single string containing all inner errors (if any) with their source location info.
@@ -166,7 +174,7 @@ public readonly record struct Error
         if (!_isError) return string.Empty;
 
         var hasMemberName = !string.IsNullOrWhiteSpace(_sourceMemberName);
-        if (!hasMemberName) return _message;
+        if (!hasMemberName) return _message ?? string.Empty;
 
         var fileName = !string.IsNullOrWhiteSpace(_sourceFilePath) 
             ? Path.GetFileName(_sourceFilePath) 
@@ -239,6 +247,7 @@ public readonly record struct Error
     {
         if (!this._isError && !target._isError) return true;
         if (!this._isError || !target._isError) return false;
+        if (_message is null) return false;
         if (_message.Equals(target._message, StringComparison.Ordinal)) return true;
 
         foreach (var error in _innerErrors ?? Enumerable.Empty<Error>())
@@ -268,6 +277,7 @@ public readonly record struct Error
 
         if (!this._isError) return false;
         if (!target._isError) return false;
+        if (_message is null) return false;
         if (_message.Equals(target._message, StringComparison.Ordinal))
         {
             match = this;
@@ -302,25 +312,7 @@ public readonly record struct Error
         }
     }
 
-    public void AppendInnerErrors(Error error)
-    {
-        if (!error) return;
-
-        var innerErrors = _innerErrors;
-        
-        if (innerErrors is null)
-        {
-            Unsafe.AsRef(in _innerErrors) = [error];
-            return;
-        }
-
-        var newArray = new Error[innerErrors.Length + 1];
-        Array.Copy(innerErrors, newArray, innerErrors.Length);
-        newArray[innerErrors.Length] = error;
-        Unsafe.AsRef(in _innerErrors) = newArray;
-    }
-
-    public void PrependInnerErrors(Error error)
+    private void PrependInnerErrors(Error error)
     {
         if (!error) return;
 
@@ -349,6 +341,7 @@ public readonly record struct Error
     {
         if (!this._isError && !other._isError) return true;
         if (!this._isError || !other._isError) return false;
+        if (_message is null || other._message is null) return false;
 
         return (_isError == true && other._isError == true) && 
                (_message.Equals(other._message, StringComparison.Ordinal));
