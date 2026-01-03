@@ -20,15 +20,15 @@ public readonly record struct Error
     /// Creates an error with a default error message.
     /// </summary>
     /// <remarks>
-    /// Source location information (member name, file path, and line number) is not captured.
+    /// NOTE: Source location information (member name, file path, and line number) is not captured.
     /// </remarks>
     public Error()
     {
         _isError = true;
         _message = Constants.UnknownError;
-        _sourceMemberName = string.Empty;
-        _sourceFilePath = string.Empty;
-        _sourceLineNumber = 0;
+        _sourceMemberName = null;
+        _sourceFilePath = null;
+        _sourceLineNumber = null;
         _innerErrors = null;
     }
 
@@ -146,7 +146,8 @@ public readonly record struct Error
     public int SourceLineNumber => _sourceLineNumber ?? 0;
 
     /// <summary>
-    /// Gets the full error stack as a single string containing all inner errors (if any) with their source location info.
+    /// Gets the full error stack as a single string containing all inner errors (if any) 
+    /// with their source location info.
     /// </summary>
     public string Stack
     {
@@ -159,7 +160,8 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Implicit conversion from Error to bool. Returns true if error is not Error.None
+    /// Implicit conversion from Error to bool.
+    /// Error.None should evaluate to false, any other Error evaluates to true.
     /// </summary>
     /// <param name="error"></param>
     public static implicit operator bool(Error error) => error._isError;
@@ -234,7 +236,7 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Checks if this error or any error in its chain matches the target error.
+    /// Checks if this error or any error in its inner errors matches the target error.
     /// </summary>
     /// <remarks>
     /// This comparison only considers the error message, ignoring any source location information
@@ -259,14 +261,13 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Attempts to find an error in the error chain that matches the target error.
+    /// Attempts to find an error in the inner error chain that matches the target error.
     /// </summary>
     /// <remarks>
-    /// This method searches through the error chain for an error with the same message as the target
-    /// (target is usually a static pre-defined sentinel error).
+    /// This method searches through the inner error chain for an error with the same message as the target.
     /// Source location information (member name, file path, and line number) is ignored.
-    /// If a match is found, it returns the matched error from the chain, which may have different
-    /// source location information than the target.
+    /// If a match is found, it returns the first occurrence of a matched error from the chain, 
+    /// which may have different source location information than the target.
     /// </remarks>
     /// <param name="target">The target error to search for</param>
     /// <param name="match">When this method returns, contains the matching error if found; otherwise, Error.None</param>
@@ -293,7 +294,7 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Joins errors into the error chain.
+    /// Joins errors into the inner error chain.
     /// Most recent errors are placed first in the chain.
     /// </summary>
     /// <param name="errors">Errors to add to the chain</param>
@@ -312,6 +313,11 @@ public readonly record struct Error
         }
     }
 
+    /// <summary>
+    /// Adds the specified error to the front of the inner error chain of this error instance.
+    /// Error.None errors are ignored and are not added to the chain.
+    /// </summary>
+    /// <param name="error"></param>
     private void PrependInnerErrors(Error error)
     {
         if (!error) return;
@@ -333,8 +339,8 @@ public readonly record struct Error
     /// <summary>
     /// Determines whether the current error is equal to the specified error.
     /// </summary>
-    /// <remarks>This method ignores source location and compares only the error state and message text. Use
-    /// this method when equality should not consider where the error originated.</remarks>
+    /// <remarks>This method ignores source location and compares only the error state and message text. 
+    /// Use this method when equality should not consider where the error originated.</remarks>
     /// <param name="other">The error to compare with the current error.</param>
     /// <returns>true if both errors have the same error state and, if present, identical message text; otherwise, false.</returns>
     public bool Equals(Error other)
@@ -351,8 +357,10 @@ public readonly record struct Error
     /// Returns a hash code for the current object based on its message.
     /// If the error represents no error (Error.None), returns 0.
     /// </summary>
-    /// <returns>An integer hash code representing the object's state. Returns 0 if there is no error; otherwise, returns the
-    /// hash code of the message text, or 0 if the message text is null.</returns>
+    /// <returns>An integer hash code representing the object's state. 
+    /// Returns 0 if there is no error; otherwise, returns the
+    /// hash code of the message text, or 0 if the message text is null.
+    /// </returns>
     public override int GetHashCode()
     {
         if (!_isError) return 0;

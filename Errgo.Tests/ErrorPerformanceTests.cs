@@ -3,7 +3,7 @@ namespace Errgo.Tests;
 public class ErrorPerformanceTests
 {
     [Fact]
-    public void Error_Is_VeryDeepChain_PerformsReasonably()
+    public void Error_Is_VeryDeepChain_ReturnsTrue()
     {
         Error err = new Error("Level 0");
         for (int i = 1; i < 100; i++)
