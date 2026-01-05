@@ -121,6 +121,18 @@ public readonly record struct Error
     public static Error Empty => new(message: "", null, null, null);
 
     /// <summary>
+    /// Creates an <see cref="Error"/> instance representing a sentinel error with the specified message.
+    /// </summary>
+    /// <param name="message">The error message to associate with the sentinel error. 
+    /// This value should describe the error condition.</param>
+    /// <remarks>
+    /// Sentinel errors do not capture source location information (member name, file path, line number).
+    /// Wrap the sentinel error in another <see cref="Error"/> instance if source location is needed.
+    /// </remarks>
+    /// <returns>An <see cref="Error"/> object initialized with the specified message and default values for other properties.</returns>
+    public static Error Sentinel(string message) => new(message, null, null, null);
+
+    /// <summary>
     /// Gets the message associated with this error, without source location information.
     /// </summary>
     public string Message => _message ?? string.Empty;
