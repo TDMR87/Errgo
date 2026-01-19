@@ -6,6 +6,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        BenchmarkRunner.Run<ComparisonBenchmarks>();
+        BenchmarkRunner.Run<PerformanceBenchmarks>();
+        //BenchmarkRunner.Run<ComparisonBenchmarks>();
     }
 }

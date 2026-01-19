@@ -11,8 +11,6 @@ namespace Errgo.Benchmarks;
 [RankColumn]
 public class ComparisonBenchmarks
 {
-    #region Callstack
-
     [Benchmark(Description = "Propagate through 10 method calls - Ardalis")]
     public Ardalis.Result.Result<int> PropagateThroughDeepCallStack_Ardalis()
     {
@@ -59,35 +57,27 @@ public class ComparisonBenchmarks
         return DeepCallStack_FluentResults_1();
     }
 
-    #endregion
-
-    #region Return unsuccessful result
-
     [Benchmark(Description = "Return unsuccessful result - Ardalis")]
     public Ardalis.Result.Result<int> CreateError_Ardalis()
     {
-        var number = GetNumber();
         return Ardalis.Result.Result<int>.Error("Operation failed");
     }
 
     [Benchmark(Description = "Return unsuccessful result - Errgo")]
     public (int?, Errgo.Error) CreateError_Errgo()
     {
-        var number = GetNumber();
         return (null, new Error("Operation failed"));
     }
 
     [Benchmark(Description = "Return unsuccessful result - ErrorOr")]
     public ErrorOr<int> CreateError_ErrorOr()
     {
-        var number = GetNumber();
         return ErrorOr.Error.Failure(description: "Operation failed");
     }
 
     [Benchmark(Description = "Return unsuccessful result - FluentResults")]
     public FluentResults.Result CreateError_FluentResults()
     {
-        var number = GetNumber();
         return FluentResults.Result.Fail("Operation failed");
     }
 
@@ -110,48 +100,37 @@ public class ComparisonBenchmarks
         }
     }
 
-    #endregion
-
-    #region Return successful result
 
     [Benchmark(Description = "Return successful result - Ardalis")]
     public Ardalis.Result.Result<int> CreateSuccess_Ardalis()
     {
-        var number = GetNumber();
-        return Ardalis.Result.Result<int>.Success(number);
+        return Ardalis.Result.Result<int>.Success(9999);
     }
 
     [Benchmark(Description = "Return successful result - Errgo")]
-    public (int, Error) CreateSuccess_Errgo()
+    public (int?, Error) CreateSuccess_Errgo()
     {
-        var number = GetNumber();
-        return (number, Error.None);
+        return (9999, Error.None);
     }
 
     [Benchmark(Description = "Return successful result - LightResults")]
     public LightResults.Result<int> CreateSuccess_LightResults()
     {
-        var number = GetNumber();
-        return LightResults.Result.Success(number);
+        return LightResults.Result.Success(9999);
     }
 
     [Benchmark(Description = "Return successful result - ErrorOr")]
     public ErrorOr<int> CreateSuccess_ErrorOr()
     {
-        var number = GetNumber();
-        return number;
+        return 9999;
     }
 
     [Benchmark(Description = "Return successful result - FluentResults")]
     public FluentResults.Result<int> CreateSuccess_FluentResults()
     {
-        var number = GetNumber();
-        return FluentResults.Result.Ok(number);
+        return FluentResults.Result.Ok(9999);
     }
 
-    #endregion
-
-    #region Wrap unsuccessful result
 
     [Benchmark(Description = "Multiple chained unsuccessful results - Errgo")]
     public Error ErrorChaining_Errgo()
@@ -175,8 +154,6 @@ public class ComparisonBenchmarks
         var rootError = new FluentResults.Error("Root error").CausedBy(thirdError);
         return rootError;
     }
-
-    #endregion
 
     private Error DeepCallStack_Errgo_1() => DeepCallStack_Errgo_2();
     private Error DeepCallStack_Errgo_2() => DeepCallStack_Errgo_3();
@@ -243,7 +220,4 @@ public class ComparisonBenchmarks
     private LightResults.Result DeepCallStack_LightResults_8() => DeepCallStack_LightResults_9();
     private LightResults.Result DeepCallStack_LightResults_9() => DeepCallStack_LightResults_10();
     private LightResults.Result DeepCallStack_LightResults_10() => new LightResults.Error("Operation failed");
-
-
-    private int GetNumber() => 9999;
 }
