@@ -96,6 +96,7 @@ public readonly record struct Error
 
     /// <summary>
     /// For internal use only. Creates an Error with the specified isError flag.
+    /// Constructing an Error.None with this is faster than using => default;
     /// </summary>
     /// <param name="isError"></param>
     private Error(bool isError)
@@ -106,13 +107,17 @@ public readonly record struct Error
         _sourceFilePath = null;
         _sourceLineNumber = null;
         _innerErrors = null;
-    } 
+    }
 
     /// <summary>
     /// Returns an non-Error with zeroed values. 
     /// Use this for returning an Error type when no error occurred.
     /// </summary>
-    public static Error None => new(isError: false);
+    public static Error None
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => new(isError: false);
+    }
 
     /// <summary>
     /// Instantiates a new Error with no messages, no inner errors and no source location information.
@@ -158,8 +163,7 @@ public readonly record struct Error
     public int SourceLineNumber => _sourceLineNumber ?? 0;
 
     /// <summary>
-    /// Gets the full error stack as a single string containing all inner errors (if any) 
-    /// with their source location info.
+    /// Gets the full error stack as a single string containing all inner errors (if any) with source location info.
     /// </summary>
     public string Stack
     {
@@ -217,14 +221,14 @@ public readonly record struct Error
         {
             if (!_isError) return [];
 
-            var errorsFlattened = new List<Error>();
+            var flatList = new List<Error>();
 
             if (_innerErrors is not null)
             {
-                CollectErrorsRecursively(_innerErrors, errorsFlattened);
+                CollectErrorsRecursively(_innerErrors, flatList);
             }
 
-            return errorsFlattened;
+            return flatList;
         }
     }
 
@@ -314,7 +318,7 @@ public readonly record struct Error
     {
         if (errors == null || errors.Length == 0) return;
 
-        // Prepend the most recent error first (reverse order)
+        // Prepend the most recent error first
         for (int i = errors.Length - 1; i >= 0; i--)
         {
             var error = errors[i];
@@ -370,7 +374,7 @@ public readonly record struct Error
     /// If the error represents no error (Error.None), returns 0.
     /// </summary>
     /// <returns>An integer hash code representing the object's state. 
-    /// Returns 0 if there is no error; otherwise, returns the
+    /// Returns 0 if this is Error.None; otherwise, returns the
     /// hash code of the message text, or 0 if the message text is null.
     /// </returns>
     public override int GetHashCode()
