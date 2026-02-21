@@ -2,18 +2,13 @@
 
 namespace Errgo;
 
-internal static class Constants
-{
-    public const string UnknownError = "Unknown error";
-}
-
 public readonly record struct Error
 {
-    private readonly bool _isError;
-    private readonly string? _message;
-    private readonly string? _sourceMemberName;
-    private readonly string? _sourceFilePath;
-    private readonly int? _sourceLineNumber;
+    private readonly bool     _isError;
+    private readonly string?  _message;
+    private readonly string?  _sourceMemberName;
+    private readonly string?  _sourceFilePath;
+    private readonly int?     _sourceLineNumber;
     private readonly Error[]? _innerErrors;
 
     /// <summary>
@@ -25,7 +20,7 @@ public readonly record struct Error
     public Error()
     {
         _isError = true;
-        _message = Constants.UnknownError;
+        _message = Constants.DefaultErrorMessage;
         _sourceMemberName = null;
         _sourceFilePath = null;
         _sourceLineNumber = null;
@@ -35,7 +30,7 @@ public readonly record struct Error
     /// <summary>
     /// Creates an error with the specified message.
     /// </summary>
-    /// <param name="message">The error message. If null or empty, defaults to "Unknown error".</param>
+    /// <param name="message">The error message. If null or empty, defaults to <see cref="Constants.DefaultErrorMessage"/>.</param>
     /// <param name="memberName">The member name where the error occurred. Automatically filled by the compiler.</param>
     /// <param name="filePath">The source file path where the error occurred. Automatically filled by the compiler.</param>
     /// <param name="lineNumber">The line number where the error occurred. Automatically filled by the compiler.</param>
@@ -51,7 +46,7 @@ public readonly record struct Error
         [CallerLineNumber] int? lineNumber = null)
     {
         _isError = true;
-        _message = message ?? Constants.UnknownError;
+        _message = message ?? Constants.DefaultErrorMessage;
         _sourceMemberName = memberName;
         _sourceFilePath = filePath;
         _sourceLineNumber = lineNumber;
@@ -80,7 +75,7 @@ public readonly record struct Error
         [CallerLineNumber] int? lineNumber = null)
     {
         _isError = true;
-        _message = message ?? Constants.UnknownError;
+        _message = message ?? Constants.DefaultErrorMessage;
         _sourceMemberName = memberName;
         _sourceFilePath = filePath;
         _sourceLineNumber = lineNumber;
@@ -108,6 +103,13 @@ public readonly record struct Error
         _sourceLineNumber = null;
         _innerErrors = null;
     }
+
+    /// <summary>
+    /// Implicit conversion from Error to bool.
+    /// NOTE: Error.None evaluates to false, any other Error evaluates to true.
+    /// </summary>
+    /// <param name="error"></param>
+    public static implicit operator bool(Error error) => error._isError;
 
     /// <summary>
     /// Returns an non-Error with zeroed values. 
@@ -148,19 +150,19 @@ public readonly record struct Error
     public string MessageDetails => this.ToString();
 
     /// <summary>
-    /// Gets the member (e.g. method or property) where this error occurred.
+    /// Gets the member (e.g. method or property name) where this error occurred.
     /// </summary>
-    public string SourceMemberName => _sourceMemberName ?? string.Empty;
+    public string? Member => _sourceMemberName;
 
     /// <summary>
-    /// Gets the source file where this error occurred.
+    /// Gets the source file path where this error occurred.
     /// </summary>
-    public string SourceFilePath => _sourceFilePath ?? string.Empty;
+    public string? Filepath => _sourceFilePath;
 
     /// <summary>
     /// Gets the line number where this error occurred.
     /// </summary>
-    public int SourceLineNumber => _sourceLineNumber ?? 0;
+    public int? LineNum => _sourceLineNumber;
 
     /// <summary>
     /// Gets the full error stack as a single string containing all inner errors (if any) with source location info.
@@ -174,13 +176,6 @@ public readonly record struct Error
             return string.Join(Environment.NewLine, lines.Where(l => !string.IsNullOrWhiteSpace(l)));
         }
     }
-
-    /// <summary>
-    /// Implicit conversion from Error to bool.
-    /// Error.None should evaluate to false, any other Error evaluates to true.
-    /// </summary>
-    /// <param name="error"></param>
-    public static implicit operator bool(Error error) => error._isError;
 
     /// <summary>
     /// Returns a string representation of the error with source location information.
@@ -381,5 +376,10 @@ public readonly record struct Error
     {
         if (!_isError) return 0;
         return _message?.GetHashCode() ?? 0;
+    }
+
+    private static class Constants
+    {
+        public const string DefaultErrorMessage = "Unknown error";
     }
 }
