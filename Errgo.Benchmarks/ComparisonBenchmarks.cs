@@ -20,15 +20,13 @@ public class ComparisonBenchmarks
     [Benchmark(Description = "Propagate through 10 method calls - Errgo")]
     public Errgo.Error PropagateThroughDeepCallStack_Errgo()
     {
-        var err = DeepCallStack_Errgo_1();
-        return err;
+        return DeepCallStack_Errgo_1();
     }
 
     [Benchmark(Description = "Propagate through 10 method calls - LightResults")]
     public LightResults.Result PropagateThroughDeepCallStack_LightResults()
     {
-        var err = DeepCallStack_LightResults_1();
-        return err;
+        return DeepCallStack_LightResults_1();
     }
 
     [Benchmark(Description = "Propagate through 10 method calls - ErrorOr")]
