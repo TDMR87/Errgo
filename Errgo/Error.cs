@@ -9,7 +9,7 @@ public readonly record struct Error
     private readonly string?  sourceMemberName;
     private readonly string?  sourceFilePath;
     private readonly int?     sourceLineNumber;
-    private readonly Error[] innerErrors;
+    private readonly Error[]  innerErrors;
 
     /// <summary>
     /// Creates an error with a default error message.
