@@ -79,8 +79,8 @@ public class ErrorJoinTests
         err.Join(inner); // Join same error again
 
         Assert.Equal(2, err.InnerErrors.Count);
-        Assert.Equal("Inner", err.InnerErrors[0].Message);
-        Assert.Equal("Inner", err.InnerErrors[1].Message);
+        Assert.Equal("Inner", err.InnerErrors.ElementAt(0).Message);
+        Assert.Equal("Inner", err.InnerErrors.ElementAt(1).Message);
     }
 
     [Fact]
@@ -97,9 +97,9 @@ public class ErrorJoinTests
         // Join prepends, constructor appends
         // Expected order: Error 4, Error 3, Error 1
         Assert.Equal(3, innerErrors.Count);
-        Assert.Equal("Error 4", innerErrors[0].Message);
-        Assert.Equal("Error 3", innerErrors[1].Message);
-        Assert.Equal("Error 1", innerErrors[2].Message);
+        Assert.Equal("Error 4", innerErrors.ElementAt(0).Message);
+        Assert.Equal("Error 3", innerErrors.ElementAt(1).Message);
+        Assert.Equal("Error 1", innerErrors.ElementAt(2).Message);
     }
 
     [Fact]
@@ -116,9 +116,9 @@ public class ErrorJoinTests
 
         // Should flatten: err3, err2, err1
         Assert.Equal(3, innerErrors.Count);
-        Assert.Equal("Error 3", innerErrors[0].Message);
-        Assert.Equal("Error 2", innerErrors[1].Message);
-        Assert.Equal("Error 1", innerErrors[2].Message);
+        Assert.Equal("Error 3", innerErrors.ElementAt(0).Message);
+        Assert.Equal("Error 2", innerErrors.ElementAt(1).Message);
+        Assert.Equal("Error 1", innerErrors.ElementAt(2).Message);
     }
 
     [Fact]
@@ -131,8 +131,8 @@ public class ErrorJoinTests
         err.Join(joinInner);
 
         Assert.Equal(2, err.InnerErrors.Count);
-        Assert.Equal("Join Inner", err.InnerErrors[0].Message);
-        Assert.Equal("Constructor Inner", err.InnerErrors[1].Message);
+        Assert.Equal("Join Inner", err.InnerErrors.ElementAt(0).Message);
+        Assert.Equal("Constructor Inner", err.InnerErrors.ElementAt(1).Message);
     }
 
     [Fact]
@@ -150,10 +150,10 @@ public class ErrorJoinTests
 
         // InnerErrors should be in reverse chronological order (latest first)
         Assert.Equal(4, innerErrors.Count);
-        Assert.Equal("Fourth joined", innerErrors[0].Message);   // Most recent (T4)
-        Assert.Equal("Third joined", innerErrors[1].Message);    // T3
-        Assert.Equal("Second joined", innerErrors[2].Message);   // T2
-        Assert.Equal("First joined", innerErrors[3].Message);    // Oldest (T1)
+        Assert.Equal("Fourth joined", innerErrors.ElementAt(0).Message);   // Most recent (T4)
+        Assert.Equal("Third joined", innerErrors.ElementAt(1).Message);    // T3
+        Assert.Equal("Second joined", innerErrors.ElementAt(2).Message);   // T2
+        Assert.Equal("First joined", innerErrors.ElementAt(3).Message);    // Oldest (T1)
     }
 
     [Fact]
@@ -172,9 +172,9 @@ public class ErrorJoinTests
 
         // When joined in a single call, errors should maintain their parameter order
         Assert.Equal(3, innerErrors.Count);
-        Assert.Equal("Error A", innerErrors[0].Message);
-        Assert.Equal("Error B", innerErrors[1].Message);
-        Assert.Equal("Error C", innerErrors[2].Message);
+        Assert.Equal("Error A", innerErrors.ElementAt(0).Message);
+        Assert.Equal("Error B", innerErrors.ElementAt(1).Message);
+        Assert.Equal("Error C", innerErrors.ElementAt(2).Message);
     }
 
     [Fact]
@@ -208,12 +208,12 @@ public class ErrorJoinTests
         // Join 1
         // Constructor Inner (oldest)
         Assert.Equal(6, innerErrors.Count);
-        Assert.Equal("Join 3", innerErrors[0].Message);
-        Assert.Equal("Batch A", innerErrors[1].Message);
-        Assert.Equal("Batch B", innerErrors[2].Message);
-        Assert.Equal("Join 2", innerErrors[3].Message);
-        Assert.Equal("Join 1", innerErrors[4].Message);
-        Assert.Equal("Constructor Inner", innerErrors[5].Message);
+        Assert.Equal("Join 3", innerErrors.ElementAt(0).Message);
+        Assert.Equal("Batch A", innerErrors.ElementAt(1).Message);
+        Assert.Equal("Batch B", innerErrors.ElementAt(2).Message);
+        Assert.Equal("Join 2", innerErrors.ElementAt(3).Message);
+        Assert.Equal("Join 1", innerErrors.ElementAt(4).Message);
+        Assert.Equal("Constructor Inner", innerErrors.ElementAt(5).Message);
     }
 
     [Fact]
@@ -251,18 +251,18 @@ public class ErrorJoinTests
         Assert.Equal(8, innerErrors.Count);
         
         // Auth chain (most recent - T3)
-        Assert.Equal("Authorization denied", innerErrors[0].Message);
-        Assert.Equal("Authentication failed", innerErrors[1].Message);
-        Assert.Equal("Token expired", innerErrors[2].Message);
+        Assert.Equal("Authorization denied", innerErrors.ElementAt(0).Message);
+        Assert.Equal("Authentication failed", innerErrors.ElementAt(1).Message);
+        Assert.Equal("Token expired", innerErrors.ElementAt(2).Message);
         
         // Validation chain (middle - T2)
-        Assert.Equal("Validation failed", innerErrors[3].Message);
-        Assert.Equal("Field required", innerErrors[4].Message);
+        Assert.Equal("Validation failed", innerErrors.ElementAt(3).Message);
+        Assert.Equal("Field required", innerErrors.ElementAt(4).Message);
         
         // Database chain (oldest - T1)
-        Assert.Equal("Database unavailable", innerErrors[5].Message);
-        Assert.Equal("Connection failed", innerErrors[6].Message);
-        Assert.Equal("Connection timeout", innerErrors[7].Message);
+        Assert.Equal("Database unavailable", innerErrors.ElementAt(5).Message);
+        Assert.Equal("Connection failed", innerErrors.ElementAt(6).Message);
+        Assert.Equal("Connection timeout", innerErrors.ElementAt(7).Message);
     }
 
     [Fact]
@@ -288,12 +288,12 @@ public class ErrorJoinTests
         // All of chain1 (outer to inner), then chain2, then chain3
         // Total: 2 + 3 + 1 = 6 inner errors (NOT including rootError)
         Assert.Equal(6, innerErrors.Count);
-        Assert.Equal("Chain 1 Outer", innerErrors[0].Message);
-        Assert.Equal("Chain 1 Inner", innerErrors[1].Message);
-        Assert.Equal("Chain 2 Outer", innerErrors[2].Message);
-        Assert.Equal("Chain 2 Inner 2", innerErrors[3].Message);
-        Assert.Equal("Chain 2 Inner 1", innerErrors[4].Message);
-        Assert.Equal("Chain 3 Outer", innerErrors[5].Message);
+        Assert.Equal("Chain 1 Outer", innerErrors.ElementAt(0).Message);
+        Assert.Equal("Chain 1 Inner", innerErrors.ElementAt(1).Message);
+        Assert.Equal("Chain 2 Outer", innerErrors.ElementAt(2).Message);
+        Assert.Equal("Chain 2 Inner 2", innerErrors.ElementAt(3).Message);
+        Assert.Equal("Chain 2 Inner 1", innerErrors.ElementAt(4).Message);
+        Assert.Equal("Chain 3 Outer", innerErrors.ElementAt(5).Message);
     }
 
     [Fact]

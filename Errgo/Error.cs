@@ -4,12 +4,12 @@ namespace Errgo;
 
 public readonly record struct Error
 {
-    private readonly bool     _isError;
-    private readonly string?  _message;
-    private readonly string?  _sourceMemberName;
-    private readonly string?  _sourceFilePath;
-    private readonly int?     _sourceLineNumber;
-    private readonly Error[]? _innerErrors;
+    private readonly bool     isError;
+    private readonly string?  message;
+    private readonly string?  sourceMemberName;
+    private readonly string?  sourceFilePath;
+    private readonly int?     sourceLineNumber;
+    private readonly Error[] innerErrors;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -19,12 +19,12 @@ public readonly record struct Error
     /// </remarks>
     public Error()
     {
-        _isError = true;
-        _message = Constants.DefaultErrorMessage;
-        _sourceMemberName = null;
-        _sourceFilePath = null;
-        _sourceLineNumber = null;
-        _innerErrors = null;
+        isError = true;
+        message = Constants.DefaultErrorMessage;
+        sourceMemberName = null;
+        sourceFilePath = null;
+        sourceLineNumber = null;
+        innerErrors = [];
     }
 
     /// <summary>
@@ -45,12 +45,12 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        _isError = true;
-        _message = message ?? Constants.DefaultErrorMessage;
-        _sourceMemberName = memberName;
-        _sourceFilePath = filePath;
-        _sourceLineNumber = lineNumber;
-        _innerErrors = null;
+        isError = true;
+        this.message = message ?? Constants.DefaultErrorMessage;
+        sourceMemberName = memberName;
+        sourceFilePath = filePath;
+        sourceLineNumber = lineNumber;
+        innerErrors = [];
     }
 
     /// <summary>
@@ -74,19 +74,19 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        _isError = true;
-        _message = message ?? Constants.DefaultErrorMessage;
-        _sourceMemberName = memberName;
-        _sourceFilePath = filePath;
-        _sourceLineNumber = lineNumber;
+        isError = true;
+        this.message = message ?? Constants.DefaultErrorMessage;
+        sourceMemberName = memberName;
+        sourceFilePath = filePath;
+        sourceLineNumber = lineNumber;
 
-        if (!error._isError)
+        if (!error.isError)
         {
-            _innerErrors = null;
+            innerErrors = [];
             return;
         }
 
-        _innerErrors = [error];
+        innerErrors = [error];
     }
 
     /// <summary>
@@ -96,20 +96,20 @@ public readonly record struct Error
     /// <param name="isError"></param>
     private Error(bool isError)
     {
-        _isError = isError;
-        _message = null;
-        _sourceMemberName = null;
-        _sourceFilePath = null;
-        _sourceLineNumber = null;
-        _innerErrors = null;
+        this.isError = isError;
+        message = null;
+        sourceMemberName = null;
+        sourceFilePath = null;
+        sourceLineNumber = null;
+        innerErrors = [];
     }
 
     /// <summary>
     /// Implicit conversion from Error to bool.
-    /// NOTE: Error.None evaluates to false, any other Error evaluates to true.
+    /// Error.None must evaluate to false, any other Error evaluates to true.
     /// </summary>
     /// <param name="error"></param>
-    public static implicit operator bool(Error error) => error._isError;
+    public static implicit operator bool(Error error) => error.isError;
 
     /// <summary>
     /// Returns an non-Error with zeroed values. 
@@ -125,7 +125,11 @@ public readonly record struct Error
     /// Instantiates a new Error with no messages, no inner errors and no source location information.
     /// Note: an empty error is still considered an error.
     /// </summary>
-    public static Error Empty => new(message: "", null, null, null);
+    public static Error Empty
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => new(message: string.Empty, null, null, null);
+    }
 
     /// <summary>
     /// Creates an <see cref="Error"/> instance representing a sentinel error with the specified message.
@@ -142,7 +146,7 @@ public readonly record struct Error
     /// <summary>
     /// Gets the message associated with this error, without source location information.
     /// </summary>
-    public string Message => _message ?? string.Empty;
+    public string Message => message ?? string.Empty;
 
     /// <summary>
     /// Gets the message associated with this error with source location information.
@@ -152,17 +156,17 @@ public readonly record struct Error
     /// <summary>
     /// Gets the member (e.g. method or property name) where this error occurred.
     /// </summary>
-    public string? Member => _sourceMemberName;
+    public string? Member => sourceMemberName;
 
     /// <summary>
-    /// Gets the source file path where this error occurred.
+    /// Gets the source file's path where this error occurred.
     /// </summary>
-    public string? Filepath => _sourceFilePath;
+    public string? Filepath => sourceFilePath;
 
     /// <summary>
     /// Gets the line number where this error occurred.
     /// </summary>
-    public int? LineNum => _sourceLineNumber;
+    public int? LineNum => sourceLineNumber;
 
     /// <summary>
     /// Gets the full error stack as a single string containing all inner errors (if any) with source location info.
@@ -184,22 +188,22 @@ public readonly record struct Error
     /// Returns an empty string for Error.None.</returns>
     public override string ToString()
     {
-        if (!_isError) return string.Empty;
+        if (!this.isError) return string.Empty;
 
-        var hasMemberName = !string.IsNullOrWhiteSpace(_sourceMemberName);
-        if (!hasMemberName) return _message ?? string.Empty;
+        var hasMemberName = !string.IsNullOrWhiteSpace(this.sourceMemberName);
+        if (!hasMemberName) return this.message ?? string.Empty;
 
-        var fileName = !string.IsNullOrWhiteSpace(_sourceFilePath) 
-            ? Path.GetFileName(_sourceFilePath) 
+        var fileName = !string.IsNullOrWhiteSpace(this.sourceFilePath) 
+            ? Path.GetFileName(this.sourceFilePath) 
             : string.Empty;
 
-        if (!string.IsNullOrWhiteSpace(fileName) && _sourceLineNumber > 0)
-            return $"{_message} at {_sourceMemberName} in {fileName} (line {_sourceLineNumber})";
+        if (!string.IsNullOrWhiteSpace(fileName) && this.sourceLineNumber > 0)
+            return $"{this.message} at {this.sourceMemberName} in {fileName} (line {this.sourceLineNumber})";
 
         if (!string.IsNullOrWhiteSpace(fileName))
-            return $"{_message} at {_sourceMemberName} in {fileName}";
+            return $"{this.message} at {this.sourceMemberName} in {fileName}";
 
-        return $"{_message} at {_sourceMemberName}";
+        return $"{this.message} at {this.sourceMemberName}";
     }
 
     /// <summary>
@@ -214,13 +218,13 @@ public readonly record struct Error
     {
         get
         {
-            if (!_isError) return [];
+            if (!this.isError) return [];
 
             var flatList = new List<Error>();
 
-            if (_innerErrors is not null)
+            if (this.innerErrors is not null)
             {
-                CollectErrorsRecursively(_innerErrors, flatList);
+                CollectErrorsRecursively(this.innerErrors, flatList);
             }
 
             return flatList;
@@ -239,9 +243,9 @@ public readonly record struct Error
         {
             collection.Add(error);
 
-            if (error._innerErrors is not null)
+            if (error.innerErrors is not null)
             {
-                CollectErrorsRecursively(error._innerErrors, collection);
+                CollectErrorsRecursively(error.innerErrors, collection);
             }
         }
     }
@@ -258,12 +262,12 @@ public readonly record struct Error
     /// <returns>True if this error or any wrapped error has the same message as the target; otherwise, false</returns>
     public bool Is(Error target)
     {
-        if (!this._isError && !target._isError) return true;
-        if (!this._isError || !target._isError) return false;
-        if (_message is null) return false;
-        if (_message.Equals(target._message, StringComparison.Ordinal)) return true;
+        if (!this.isError && !target.isError) return true;
+        if (!this.isError || !target.isError) return false;
+        if (this.message is null) return false;
+        if (this.message.Equals(target.message, StringComparison.Ordinal)) return true;
 
-        foreach (var error in _innerErrors ?? Enumerable.Empty<Error>())
+        foreach (var error in innerErrors ?? [])
         {
             if (error.Is(target)) return true;
         }
@@ -287,16 +291,16 @@ public readonly record struct Error
     {
         match = Error.None;
 
-        if (!this._isError) return false;
-        if (!target._isError) return false;
-        if (_message is null) return false;
-        if (_message.Equals(target._message, StringComparison.Ordinal))
+        if (!this.isError) return false;
+        if (!target.isError) return false;
+        if (this.message is null) return false;
+        if (this.message.Equals(target.message, StringComparison.Ordinal))
         {
             match = this;
             return true;
         }
 
-        foreach (var error in _innerErrors ?? Enumerable.Empty<Error>())
+        foreach (var error in innerErrors ?? [])
         {
             if (error.As(target, out match)) return true;
         }
@@ -309,15 +313,14 @@ public readonly record struct Error
     /// Most recent errors are placed first in the chain.
     /// </summary>
     /// <param name="errors">Errors to add to the chain</param>
-    public void Join(params Error[] errors)
+    public void Join(params Error[]? errors)
     {
         if (errors == null || errors.Length == 0) return;
 
-        // Prepend the most recent error first
         for (int i = errors.Length - 1; i >= 0; i--)
         {
             var error = errors[i];
-            if (error._isError)
+            if (error.isError)
             {
                 PrependInnerErrors(error);
             }
@@ -333,18 +336,17 @@ public readonly record struct Error
     {
         if (!error) return;
 
-        var innerErrors = _innerErrors;
-        
+        var innerErrors = this.innerErrors;
         if (innerErrors is null)
         {
-            Unsafe.AsRef(in _innerErrors) = [error];
+            Unsafe.AsRef(in this.innerErrors) = [error];
             return;
         }
 
         var newArray = new Error[innerErrors.Length + 1];
         newArray[0] = error;
         Array.Copy(innerErrors, 0, newArray, 1, innerErrors.Length);
-        Unsafe.AsRef(in _innerErrors) = newArray;
+        Unsafe.AsRef(in this.innerErrors) = newArray;
     }
 
     /// <summary>
@@ -356,12 +358,12 @@ public readonly record struct Error
     /// <returns>true if both errors have the same error state and, if present, identical message text; otherwise, false.</returns>
     public bool Equals(Error other)
     {
-        if (!this._isError && !other._isError) return true;
-        if (!this._isError || !other._isError) return false;
-        if (_message is null || other._message is null) return false;
+        if (!this.isError && !other.isError) return true;
+        if (!this.isError || !other.isError) return false;
+        if (message is null || other.message is null) return false;
 
-        return (_isError == true && other._isError == true) && 
-               (_message.Equals(other._message, StringComparison.Ordinal));
+        return (isError == true && other.isError == true) && 
+               (message.Equals(other.message, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -374,8 +376,8 @@ public readonly record struct Error
     /// </returns>
     public override int GetHashCode()
     {
-        if (!_isError) return 0;
-        return _message?.GetHashCode() ?? 0;
+        if (!this.isError) return 0;
+        return this.message?.GetHashCode() ?? 0;
     }
 
     private static class Constants

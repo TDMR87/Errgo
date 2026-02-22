@@ -62,16 +62,29 @@ public class PerformanceBenchmarks
     }
 
     [Benchmark(Description = "As() - Search 10-level chain")]
-    public bool ErrorAs()
+    public Error ErrorAs()
     {
         var target = new Error("Level 5");
-        return _chainedError.As(target, out _);
+        _chainedError.As(target, out Error err);
+        return err;
     }
 
     [Benchmark(Description = "InnerErrors - Get from 10-level chain")]
-    public IReadOnlyList<Error> GetInnerErrors()
+    public List<Error> GetInnerErrors()
     {
-        return _chainedError.InnerErrors;
+        return _chainedError.InnerErrors.ToList();
+    }
+
+    [Benchmark(Description = "InnerErrors - Enumerate 10-level chain")]
+    public int EnumerateInnerErrors()
+    {
+        var list = new List<Error>();
+        foreach (var error in _chainedError.InnerErrors)
+        {
+            list.Add(error);
+        }
+
+        return list.Count;
     }
 
     [Benchmark(Description = "Equals() - Compare errors")]

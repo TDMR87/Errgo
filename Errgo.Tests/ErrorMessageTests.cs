@@ -11,8 +11,8 @@ public class ErrorMessageTests
 
         Assert.Equal(2, outer.InnerErrors.Count);
         Assert.Equal("Outer error", outer.Message);
-        Assert.Equal("Middle error", outer.InnerErrors[0].Message);
-        Assert.Equal("Unknown error", outer.InnerErrors[1].Message);
+        Assert.Equal("Middle error", outer.InnerErrors.ElementAt(0).Message);
+        Assert.Equal("Unknown error", outer.InnerErrors.ElementAt(1).Message);
     }
 
     [Fact]

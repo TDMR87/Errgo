@@ -13,6 +13,12 @@ public static class Errors
     public static readonly Error Unauthorized = Error.Sentinel("Unauthorized access");
 }
 
+class MyType
+{
+    public int MyProperty { get; set; }
+    public Error Error { get; set; }
+}
+
 public class Examples
 {
     /// <summary>
