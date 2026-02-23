@@ -17,9 +17,9 @@ public class ErrorSentinelTests
 
         var (item, err) = GetItemById(123);
 
-        Assert.Null(err.Member);
-        Assert.Null(err.LineNum);
-        Assert.Null(err.Filepath);
+        Assert.Null(err.SourceMemberName);
+        Assert.Null(err.SourceLineNumber);
+        Assert.Null(err.SourceFilepath);
     }
 
     [Fact]
@@ -34,9 +34,9 @@ public class ErrorSentinelTests
 
         Assert.Equal("Error getting item with id 123", err.Message);
         Assert.Equal(Errors.NotFound, err.InnerErrors[0]);
-        Assert.NotNull(err.Filepath);
-        Assert.NotEqual(0, err.LineNum);
-        Assert.Equal(nameof(Error_SentinelError_HasSourceLocationInformation_WhenWrappedInError), err.Member);
+        Assert.NotNull(err.SourceFilepath);
+        Assert.NotEqual(0, err.SourceLineNumber);
+        Assert.Equal(nameof(Error_SentinelError_HasSourceLocationInformation_WhenWrappedInError), err.SourceMemberName);
     }
 
     [Fact]

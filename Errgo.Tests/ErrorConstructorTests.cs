@@ -19,9 +19,9 @@ public class ErrorConstructorTests
     public void Error_DefaultConstructor_DoesNotCaptureSourceLocation()
     {
         var err = new Error();
-        Assert.Null(err.Member);
-        Assert.Null(err.Filepath);
-        Assert.Null(err.LineNum);
+        Assert.Null(err.SourceMemberName);
+        Assert.Null(err.SourceFilepath);
+        Assert.Null(err.SourceLineNumber);
     }
 
     [Fact]
@@ -29,19 +29,19 @@ public class ErrorConstructorTests
     {
         Error err = new(message: null!);
         Assert.Equal("Unknown error", err.Message);
-        Assert.NotNull(err.Member);
-        Assert.NotEmpty(err.Member);
-        Assert.NotNull(err.Filepath);
-        Assert.NotEmpty(err.Filepath);
-        Assert.NotNull(err.LineNum);
-        Assert.NotEqual(0, err.LineNum);
+        Assert.NotNull(err.SourceMemberName);
+        Assert.NotEmpty(err.SourceMemberName);
+        Assert.NotNull(err.SourceFilepath);
+        Assert.NotEmpty(err.SourceFilepath);
+        Assert.NotNull(err.SourceLineNumber);
+        Assert.NotEqual(0, err.SourceLineNumber);
     }
 
     [Fact]
     public void Error_DefaultConstructor_WithEmptyMessageCaputersSourceLocation()
     {
         Error err = new(string.Empty);
-        Assert.NotNull(err.Member);
+        Assert.NotNull(err.SourceMemberName);
     }
 
     [Fact]
@@ -59,12 +59,12 @@ public class ErrorConstructorTests
         Assert.Empty(emptyError.Message);
 
         // Neither of them capture source location
-        Assert.Null(defaultError.Member);
-        Assert.Null(defaultError.Filepath);
-        Assert.Null(defaultError.LineNum);
-        Assert.Null(emptyError.Member);
-        Assert.Null(emptyError.Filepath);
-        Assert.Null(emptyError.LineNum);
+        Assert.Null(defaultError.SourceMemberName);
+        Assert.Null(defaultError.SourceFilepath);
+        Assert.Null(defaultError.SourceLineNumber);
+        Assert.Null(emptyError.SourceMemberName);
+        Assert.Null(emptyError.SourceFilepath);
+        Assert.Null(emptyError.SourceLineNumber);
     }
 
     [Fact]

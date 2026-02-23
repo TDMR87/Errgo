@@ -2,32 +2,36 @@ namespace Errgo.Tests;
 
 public class ErrorAsTests
 {
-    public static readonly Error NotFound = new("Item not found");
+    public static readonly Error NotFoundError = Error.Sentinel("Item not found");
+    public static readonly Error TimeoutError = Error.Sentinel("Database connection timed out");
 
-    private static (object?, Error) GetDatabaseError() => (null, new Error("Database connection failed"));
+    private static (object?, Error) GetDatabaseError()
+    {
+        return (null, new Error("Database error", TimeoutError));
+    }
 
     [Fact]
     public void Error_As_FindsErrorInChain()
     {
-        var inner = NotFound;
+        var inner = NotFoundError;
         var middle = new Error("Middle error", inner);
         var outer = new Error("Outer error", middle);
 
-        Assert.True(outer.As(NotFound, out var match));
-        Assert.Equal(NotFound.Message, match.Message);
+        Assert.True(outer.As(NotFoundError, out var match));
+        Assert.Equal(NotFoundError, match);
         
-        Assert.True(middle.As(NotFound, out match));
-        Assert.Equal(NotFound.Message, match.Message);
-        
-        Assert.True(inner.As(NotFound, out match));
-        Assert.Equal(NotFound.Message, match.Message);
+        Assert.True(middle.As(NotFoundError, out match));
+        Assert.Equal(NotFoundError, match);
+
+        Assert.True(inner.As(NotFoundError, out match));
+        Assert.Equal(NotFoundError, match);
     }
 
     [Fact]
     public void Error_As_DoesNotFindErrorInChain()
     {
         var differentError = new Error("Different error");
-        var err = new Error("Some error", NotFound);
+        var err = new Error("Some error", NotFoundError);
 
         Assert.False(err.As(differentError, out var match));
         Assert.Equal(Error.None, match);
@@ -38,21 +42,17 @@ public class ErrorAsTests
     {
         var (_, err) = GetDatabaseError();
         
-        // Create a sentinel error without source location for matching
-        var dbErrorSentinel = new Error("Database connection failed");
-        
-        // Use As to find the actual error in the chain with source location
-        Assert.True(err.As(dbErrorSentinel, out var match));
-        Assert.Equal("Database connection failed", match.Message);
-        Assert.Equal("GetDatabaseError", match.Member);
-        Assert.Contains("ErrorAsTests.cs", match.Filepath);
-        Assert.True(match.LineNum > 0);
+        Assert.True(err.As(TimeoutError, out var match));
+        Assert.Equal(TimeoutError, match);
+        Assert.Equal("GetDatabaseError", err.SourceMemberName);
+        Assert.Contains("ErrorAsTests.cs", err.SourceFilepath);
+        Assert.True(err.SourceLineNumber > 0);
     }
 
     [Fact]
     public void Error_As_WithErrorNoneReturnsFalse()
     {
-        Assert.False(Error.None.As(NotFound, out var match));
+        Assert.False(Error.None.As(NotFoundError, out var match));
         Assert.Equal(Error.None, match);
         
         Assert.False(Error.None.As(new Error("Some error"), out match));

@@ -158,17 +158,17 @@ public readonly record struct Error
     /// <summary>
     /// Gets the member (e.g. method or property name) where this error occurred.
     /// </summary>
-    public string? Member => sourceMemberName;
+    public string? SourceMemberName => sourceMemberName;
 
     /// <summary>
     /// Gets the source file's path where this error occurred.
     /// </summary>
-    public string? Filepath => sourceFilePath;
+    public string? SourceFilepath => sourceFilePath;
 
     /// <summary>
     /// Gets the line number where this error occurred.
     /// </summary>
-    public int? LineNum => sourceLineNumber;
+    public int? SourceLineNumber => sourceLineNumber;
 
     /// <summary>
     /// Gets the full error stack as a single string containing all inner errors (if any) with source location info.
