@@ -190,4 +190,14 @@ public class ErrorIsTests
         Assert.True(joiner.Is(new Error("Constructor Error")));
         Assert.True(joiner.Is(new Error("Join Error")));
     }
+
+    [Fact]
+    public void Error_Is_EmptyMessageWithInnerErrors_SearchesInnerErrors()
+    {
+        var sentinel = Error.Sentinel("Database error");
+        var outer = Error.Empty;
+        outer.Join(sentinel);
+        Assert.Empty(outer.Message);
+        Assert.True(outer.Is(sentinel)); // Should find in inner errors even though outer message is empty
+    }
 }

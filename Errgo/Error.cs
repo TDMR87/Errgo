@@ -9,7 +9,7 @@ public readonly record struct Error
     private readonly string?  sourceMemberName;
     private readonly string?  sourceFilePath;
     private readonly int?     sourceLineNumber;
-    private readonly Error[]  innerErrors;
+    private readonly Error[]?  innerErrors;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -19,18 +19,18 @@ public readonly record struct Error
     /// </remarks>
     public Error()
     {
-        isError = true;
-        message = Constants.DefaultErrorMessage;
-        sourceMemberName = null;
-        sourceFilePath = null;
-        sourceLineNumber = null;
-        innerErrors = [];
+        this.isError = true;
+        this.message = Constants.DefaultErrorMessage;
+        this.sourceMemberName = null;
+        this.sourceFilePath = null;
+        this.sourceLineNumber = null;
+        this.innerErrors = null;
     }
 
     /// <summary>
     /// Creates an error with the specified message.
     /// </summary>
-    /// <param name="message">The error message. If null or empty, defaults to <see cref="Constants.DefaultErrorMessage"/>.</param>
+    /// <param name="message">The error message. If null, defaults to <see cref="Constants.DefaultErrorMessage"/>.</param>
     /// <param name="memberName">The member name where the error occurred. Automatically filled by the compiler.</param>
     /// <param name="filePath">The source file path where the error occurred. Automatically filled by the compiler.</param>
     /// <param name="lineNumber">The line number where the error occurred. Automatically filled by the compiler.</param>
@@ -40,23 +40,23 @@ public readonly record struct Error
     /// in typical usage.
     /// </remarks>
     public Error(
-        string? message,
+        string? message = Constants.DefaultErrorMessage,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        isError = true;
+        this.isError = true;
         this.message = message ?? Constants.DefaultErrorMessage;
-        sourceMemberName = memberName;
-        sourceFilePath = filePath;
-        sourceLineNumber = lineNumber;
-        innerErrors = [];
+        this.sourceMemberName = memberName;
+        this.sourceFilePath = filePath;
+        this.sourceLineNumber = lineNumber;
+        this.innerErrors = null;
     }
 
     /// <summary>
     /// Creates an error with the specified message and wraps an inner error, forming an error chain.
     /// </summary>
-    /// <param name="message">The error message for this error. If null or empty, defaults to "Unknown error".</param>
+    /// <param name="message">The error message for this error. If null, defaults to "Unknown error".</param>
     /// <param name="error">The inner error to wrap in the chain.</param>
     /// <param name="memberName">The member name where the error occurred. Automatically filled by the compiler.</param>
     /// <param name="filePath">The source file path where the error occurred. Automatically filled by the compiler.</param>
@@ -74,34 +74,36 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        isError = true;
+        this.isError = true;
         this.message = message ?? Constants.DefaultErrorMessage;
-        sourceMemberName = memberName;
-        sourceFilePath = filePath;
-        sourceLineNumber = lineNumber;
+        this.sourceMemberName = memberName;
+        this.sourceFilePath = filePath;
+        this.sourceLineNumber = lineNumber;
 
         if (!error.isError)
         {
-            innerErrors = [];
+            this.innerErrors = null;
             return;
         }
 
-        innerErrors = [error];
+        this.innerErrors = [error];
     }
 
     /// <summary>
-    /// For internal use only. Creates an Error with the specified isError flag.
+    /// For internal use only. Creates an Error with the specified isError state.
+    /// 
+    /// NOTES:
     /// Constructing an Error.None with this is faster than using => default;
     /// </summary>
     /// <param name="isError"></param>
     private Error(bool isError)
     {
         this.isError = isError;
-        message = null;
-        sourceMemberName = null;
-        sourceFilePath = null;
-        sourceLineNumber = null;
-        innerErrors = [];
+        this.message = null;
+        this.sourceMemberName = null;
+        this.sourceFilePath = null;
+        this.sourceLineNumber = null;
+        this.innerErrors = null;
     }
 
     /// <summary>
@@ -122,7 +124,7 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Instantiates a new Error with no messages, no inner errors and no source location information.
+    /// Instantiates a new Error with no message, no inner errors and no source location information.
     /// Note: an empty error is still considered an error.
     /// </summary>
     public static Error Empty
@@ -176,7 +178,13 @@ public readonly record struct Error
         get
         {
             var lines = new List<string> { this.ToString() };
-            lines.AddRange(InnerErrors.Select(e => e.ToString()));
+
+            if (innerErrors is not null)
+            {
+                // Use the public member to get the recursively flattened list of errors
+                lines.AddRange(InnerErrors.Select(e => e.ToString()));
+            }
+
             return string.Join(Environment.NewLine, lines.Where(l => !string.IsNullOrWhiteSpace(l)));
         }
     }
@@ -218,15 +226,10 @@ public readonly record struct Error
     {
         get
         {
-            if (!this.isError) return [];
-
-            var flatList = new List<Error>();
-
-            if (this.innerErrors is not null)
-            {
-                CollectErrorsRecursively(this.innerErrors, flatList);
-            }
-
+            List<Error> flatList = [];
+            if (!this.isError) return flatList;
+            if (this.innerErrors is null) return flatList;
+            CollectErrorsRecursively(this.innerErrors, flatList);
             return flatList;
         }
     }
@@ -254,9 +257,8 @@ public readonly record struct Error
     /// Checks if this error or any error in its inner errors matches the target error.
     /// </summary>
     /// <remarks>
-    /// This comparison only considers the error message, ignoring any source location information
-    /// (member name, file path, and line number). This allows matching errors by their semantic
-    /// meaning regardless of where they were created.
+    /// This comparison only considers the error message, source location information
+    /// (member name, file path, and line number) is ignored.
     /// </remarks>
     /// <param name="target">The target error to check for</param>
     /// <returns>True if this error or any wrapped error has the same message as the target; otherwise, false</returns>
@@ -264,12 +266,14 @@ public readonly record struct Error
     {
         if (!this.isError && !target.isError) return true;
         if (!this.isError || !target.isError) return false;
-        if (this.message is null) return false;
-        if (this.message.Equals(target.message, StringComparison.Ordinal)) return true;
-
-        foreach (var error in innerErrors ?? [])
+        if (this.message is not null && this.message.Equals(target.message, StringComparison.Ordinal))
         {
-            if (error.Is(target)) return true;
+            return true;
+        }
+
+        foreach (var innerError in innerErrors ?? [])
+        {
+            if (innerError.Is(target)) return true;
         }
 
         return false;
@@ -293,24 +297,23 @@ public readonly record struct Error
 
         if (!this.isError) return false;
         if (!target.isError) return false;
-        if (this.message is null) return false;
-        if (this.message.Equals(target.message, StringComparison.Ordinal))
+        if (this.message is not null && this.message.Equals(target.message, StringComparison.Ordinal))
         {
             match = this;
             return true;
         }
 
-        foreach (var error in innerErrors ?? [])
+        foreach (var innerError in innerErrors ?? [])
         {
-            if (error.As(target, out match)) return true;
+            if (innerError.As(target, out match)) return true;
         }
 
         return false;
     }
 
     /// <summary>
-    /// Joins errors into the inner error chain.
-    /// Most recent errors are placed first in the chain.
+    /// Joins the specified errors into the inner error chain of this error.
+    /// Errors are always prepended to the error chain (most recent first).
     /// </summary>
     /// <param name="errors">Errors to add to the chain</param>
     public void Join(params Error[]? errors)
@@ -334,18 +337,25 @@ public readonly record struct Error
     /// <param name="error"></param>
     private void PrependInnerErrors(Error error)
     {
-        if (!error) return;
+        if (!error.isError) return;
 
-        var innerErrors = this.innerErrors;
-        if (innerErrors is null)
+        if (this.innerErrors is null)
         {
             Unsafe.AsRef(in this.innerErrors) = [error];
             return;
         }
 
-        var newArray = new Error[innerErrors.Length + 1];
-        newArray[0] = error;
-        Array.Copy(innerErrors, 0, newArray, 1, innerErrors.Length);
+        // Make an array that fits the existing errors + the new error to prepend
+        var newArray = new Error[this.innerErrors.Length + 1];
+        newArray[0] = error; // The new error goes at the front of the chain
+
+        Array.Copy(
+            sourceArray: this.innerErrors,
+            destinationArray: newArray,
+            sourceIndex: 0, 
+            destinationIndex: 1, // Copy after the newly added error
+            length: this.innerErrors.Length);
+
         Unsafe.AsRef(in this.innerErrors) = newArray;
     }
 

@@ -14,6 +14,6 @@ public class ErrorEmptyTests
     public void Error_Empty_HasEmptyMessage()
     {
         var err = Error.Empty;
-        Assert.Equal(string.Empty, err.Message);
+        Assert.Empty(err.Message);
     }
 }

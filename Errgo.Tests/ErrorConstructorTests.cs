@@ -27,8 +27,14 @@ public class ErrorConstructorTests
     [Fact]
     public void Error_DefaultConstructor_WithNullMessageCaputersSourceLocation()
     {
-        Error err = new(null!);
+        Error err = new(message: null!);
+        Assert.Equal("Unknown error", err.Message);
         Assert.NotNull(err.Member);
+        Assert.NotEmpty(err.Member);
+        Assert.NotNull(err.Filepath);
+        Assert.NotEmpty(err.Filepath);
+        Assert.NotNull(err.LineNum);
+        Assert.NotEqual(0, err.LineNum);
     }
 
     [Fact]
@@ -50,7 +56,7 @@ public class ErrorConstructorTests
 
         // They have different messages
         Assert.Equal("Unknown error", defaultError.Message);
-        Assert.Equal(string.Empty, emptyError.Message);
+        Assert.Empty(emptyError.Message);
 
         // Neither of them capture source location
         Assert.Null(defaultError.Member);
@@ -62,7 +68,7 @@ public class ErrorConstructorTests
     }
 
     [Fact]
-    public void Error_Constructor_WithErrorNoneAsInner_NoChain()
+    public void Error_Constructor_WrappingErrorNone_HasNoInnerErrors()
     {
         var err = new Error("Outer", Error.None);
         Assert.Equal("Outer", err.Message);

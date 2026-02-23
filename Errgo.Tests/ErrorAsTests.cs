@@ -67,4 +67,15 @@ public class ErrorAsTests
         Assert.True(err.As(new Error(""), out var match));
         Assert.Equal("", match.Message);
     }
+
+    [Fact]
+    public void Error_As_EmptyMessageWithInnerErrors_SearchesInnerErrors()
+    {
+        var sentinel = Error.Sentinel("Database error");
+        var outer = Error.Empty;
+        outer.Join(sentinel);
+        Assert.Empty(outer.Message);
+        Assert.True(outer.As(sentinel, out var match));
+        Assert.Equal(sentinel, match);
+    }
 }
