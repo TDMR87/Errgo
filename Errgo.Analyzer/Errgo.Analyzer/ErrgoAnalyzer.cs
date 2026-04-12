@@ -11,25 +11,24 @@ namespace Errgo.Analyzer
     public class ErrgoAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "ERRGO001";
-        public const string ErrorVariableNameKey = "ErrorVariableName";
-        private const string Category = "Usage";
-
-        private static readonly LocalizableString Title = "Error not checked";
-        private static readonly LocalizableString MessageFormat = "Error variable '{0}' is not checked";
-        private static readonly LocalizableString Description = "Error return values from method calls should be checked with 'if (err)' in the next statement.";
 
         /// <summary>
-        /// Represents the diagnostic rule that defines the characteristics of this analyzer's reported diagnostics.
+        /// Describes the diagnostic raised by this analyzer
         /// </summary>
         private static readonly DiagnosticDescriptor ErrgoDiagnosticDescriptor = new DiagnosticDescriptor(
-            DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning,
-            isEnabledByDefault: true, description: Description);
+            id: DiagnosticId,
+            title: "Error not checked",
+            messageFormat: "Error variable '{0}' is not checked",
+            description: "Error return values from method calls should be checked with 'if (err)' in the next statement.",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
 
         /// <summary>
         /// Gets a new empty dictionary of string keys and values for storing diagnostic properties. 
         /// Used to pass data from the analyzer to the code fix provider.
         /// </summary>
-        private static ImmutableDictionary<string, string> PropertiesBag 
+        private static ImmutableDictionary<string, string> DiagnosticProperties 
             => ImmutableDictionary<string, string>.Empty;
 
         /// <summary>
@@ -38,6 +37,9 @@ namespace Errgo.Analyzer
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics 
             => ImmutableArray.Create(ErrgoDiagnosticDescriptor);
 
+        /// <summary>
+        /// Initializes the analyzer and registers actions to be executed during code analysis.
+        /// </summary>
         public override void Initialize(AnalysisContext context)
         {
             context.EnableConcurrentExecution();
@@ -67,7 +69,7 @@ namespace Errgo.Analyzer
                 var diagnostic = Diagnostic.Create(
                     descriptor: ErrgoDiagnosticDescriptor, 
                     location: variable.Identifier.GetLocation(), 
-                    properties: PropertiesBag.Add(ErrorVariableNameKey, variableName), 
+                    properties: DiagnosticProperties.Add(ErrorVariableNameKey, variableName), 
                     messageArgs: variableName);
 
                 context.ReportDiagnostic(diagnostic);
@@ -140,7 +142,7 @@ namespace Errgo.Analyzer
                         var diagnostic = Diagnostic.Create(
                             descriptor: ErrgoDiagnosticDescriptor, 
                             location: variableNode.GetLocation(), 
-                            properties: PropertiesBag.Add(ErrorVariableNameKey, variableName), 
+                            properties: DiagnosticProperties.Add(ErrorVariableNameKey, variableName), 
                             messageArgs: variableName);
 
                         context.ReportDiagnostic(diagnostic);
@@ -167,7 +169,7 @@ namespace Errgo.Analyzer
                             var diagnostic = Diagnostic.Create(
                                 descriptor: ErrgoDiagnosticDescriptor, 
                                 location: singleVar.GetLocation(), 
-                                properties: PropertiesBag.Add(ErrorVariableNameKey, variableName), 
+                                properties: DiagnosticProperties.Add(ErrorVariableNameKey, variableName), 
                                 messageArgs: variableName);
 
                             context.ReportDiagnostic(diagnostic);
@@ -245,5 +247,7 @@ namespace Errgo.Analyzer
 
             return false;
         }
+
+        public const string ErrorVariableNameKey = "ErrorVariableName";
     }
 }

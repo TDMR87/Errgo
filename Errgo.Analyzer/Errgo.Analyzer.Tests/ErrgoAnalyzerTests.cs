@@ -1,8 +1,3 @@
-/*
- * How to test a Roslyn analyzer:
- * https://www.meziantou.net/how-to-test-a-roslyn-analyzer.htm
-*/
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.CSharp.Testing;
