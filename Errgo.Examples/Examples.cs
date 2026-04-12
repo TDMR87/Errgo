@@ -21,27 +21,23 @@ class MyType
 
 public class Examples
 {
-    /// <summary>
-    /// Demonstrates accumulating multiple validation errors.
-    /// Useful for form validation where you want to show all errors at once.
-    /// </summary>
     public void ValidationScenarioExample()
     {
-        var validationError = Error.Empty;
+        var errors = Error.Empty;
 
         var (isValid, err) = ValidateEmail("invalid-email@domain.com");
-        if (err) validationError.Join(err);
+        if (err) errors.Join(err);
 
         (isValid, err) = ValidateAge(-5);
-        if (err) validationError.Join(err);
+        if (err) errors.Join(err);
 
         (isValid, err) = ValidateUsername("");
-        if (err) validationError.Join(err);
+        if (err) errors.Join(err);
 
-        if (validationError)
+        if (errors)
         {
-            Console.WriteLine($"Found {validationError.InnerErrors.Count} validation errors:");
-            Console.WriteLine(validationError.InnerErrors);
+            Console.WriteLine($"Found {errors.InnerErrors.Count} validation errors:");
+            Console.WriteLine(errors.Stack);
         }
     }
 

@@ -11,28 +11,42 @@ namespace Errgo.Analyzer
     public class ErrgoAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "ERRGO001";
+        public const string ErrorVariableNameKey = "ErrorVariableName";
         private const string Category = "Usage";
 
         private static readonly LocalizableString Title = "Error not checked";
         private static readonly LocalizableString MessageFormat = "Error variable '{0}' is not checked";
         private static readonly LocalizableString Description = "Error return values from method calls should be checked with 'if (err)' in the next statement.";
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+        /// <summary>
+        /// Represents the diagnostic rule that defines the characteristics of this analyzer's reported diagnostics.
+        /// </summary>
+        private static readonly DiagnosticDescriptor ErrgoDiagnosticDescriptor = new DiagnosticDescriptor(
             DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning,
             isEnabledByDefault: true, description: Description);
 
+        /// <summary>
+        /// Gets a new empty dictionary of string keys and values for storing diagnostic properties. 
+        /// Used to pass data from the analyzer to the code fix provider.
+        /// </summary>
+        private static ImmutableDictionary<string, string> PropertiesBag 
+            => ImmutableDictionary<string, string>.Empty;
+
+        /// <summary>
+        /// Gets the set of diagnostic descriptors supported by this analyzer.
+        /// </summary>
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics 
-            => ImmutableArray.Create(Rule);
+            => ImmutableArray.Create(ErrgoDiagnosticDescriptor);
 
         public override void Initialize(AnalysisContext context)
         {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-            context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.LocalDeclarationStatement);
+            context.RegisterSyntaxNodeAction(AnalyzeLocalErrorDeclaration, SyntaxKind.LocalDeclarationStatement);
             context.RegisterSyntaxNodeAction(AnalyzeTupleDeconstruction, SyntaxKind.SimpleAssignmentExpression);
         }
 
-        private static void AnalyzeNode(SyntaxNodeAnalysisContext context)
+        private static void AnalyzeLocalErrorDeclaration(SyntaxNodeAnalysisContext context)
         {
             var declaration = (LocalDeclarationStatementSyntax)context.Node;
             
@@ -41,6 +55,7 @@ namespace Errgo.Analyzer
                 if (variable.Initializer == null) continue;
 
                 var typeInfo = context.SemanticModel.GetTypeInfo(declaration.Declaration.Type);
+                
                 if (!IsErrorType(typeInfo.Type)) continue;
 
                 if (!IsMethodCall(variable.Initializer.Value)) continue;
@@ -49,7 +64,12 @@ namespace Errgo.Analyzer
 
                 if (IsErrorChecked(declaration, variableName)) continue;
 
-                var diagnostic = Diagnostic.Create(Rule, variable.Identifier.GetLocation(), variableName);
+                var diagnostic = Diagnostic.Create(
+                    descriptor: ErrgoDiagnosticDescriptor, 
+                    location: variable.Identifier.GetLocation(), 
+                    properties: PropertiesBag.Add(ErrorVariableNameKey, variableName), 
+                    messageArgs: variableName);
+
                 context.ReportDiagnostic(diagnostic);
             }
         }
@@ -70,6 +90,7 @@ namespace Errgo.Analyzer
             {
                 AnalyzeTupleElements(context, tupleExpression.Arguments, statement);
             }
+
             // Handle: var (str, err) = GetData()
             else if (assignment.Left is DeclarationExpressionSyntax declExpr && 
                      declExpr.Designation is ParenthesizedVariableDesignationSyntax parenDesignation)
@@ -100,7 +121,8 @@ namespace Errgo.Analyzer
                         variableNode = designation;
                     }
                 }
-                // Handle: (err, ...) where err is already declared
+
+                // Handle: (err, ...) where err is already declared elsewhere
                 else if (argument.Expression is IdentifierNameSyntax identifier)
                 {
                     var symbolInfo = context.SemanticModel.GetSymbolInfo(identifier);
@@ -115,7 +137,12 @@ namespace Errgo.Analyzer
                 {
                     if (!IsErrorChecked(statement, variableName))
                     {
-                        var diagnostic = Diagnostic.Create(Rule, variableNode.GetLocation(), variableName);
+                        var diagnostic = Diagnostic.Create(
+                            descriptor: ErrgoDiagnosticDescriptor, 
+                            location: variableNode.GetLocation(), 
+                            properties: PropertiesBag.Add(ErrorVariableNameKey, variableName), 
+                            messageArgs: variableName);
+
                         context.ReportDiagnostic(diagnostic);
                     }
                 }
@@ -137,7 +164,12 @@ namespace Errgo.Analyzer
                         var variableName = singleVar.Identifier.Text;
                         if (!IsErrorChecked(statement, variableName))
                         {
-                            var diagnostic = Diagnostic.Create(Rule, singleVar.GetLocation(), variableName);
+                            var diagnostic = Diagnostic.Create(
+                                descriptor: ErrgoDiagnosticDescriptor, 
+                                location: singleVar.GetLocation(), 
+                                properties: PropertiesBag.Add(ErrorVariableNameKey, variableName), 
+                                messageArgs: variableName);
+
                             context.ReportDiagnostic(diagnostic);
                         }
                     }

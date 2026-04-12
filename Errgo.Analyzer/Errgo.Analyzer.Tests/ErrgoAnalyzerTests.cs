@@ -1,3 +1,8 @@
+/*
+ * How to test a Roslyn analyzer:
+ * https://www.meziantou.net/how-to-test-a-roslyn-analyzer.htm
+*/
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.CSharp.Testing;
@@ -6,25 +11,10 @@ namespace Errgo.Analyzer.Tests;
 
 public class ErrgoAnalyzerTests
 {
-    private static readonly ReferenceAssemblies ReferenceAssemblies = ReferenceAssemblies.Net.Net80;
-
-    private static CSharpAnalyzerTest<ErrgoAnalyzer, Microsoft.CodeAnalysis.Testing.Verifiers.XUnitVerifier> CreateTest(string code)
-    {
-        var test = new CSharpAnalyzerTest<ErrgoAnalyzer, Microsoft.CodeAnalysis.Testing.Verifiers.XUnitVerifier>
-        {
-            TestCode = code,
-            ReferenceAssemblies = ReferenceAssemblies,
-        };
-
-        test.TestState.AdditionalReferences.Add(typeof(Error).Assembly);
-        
-        return test;
-    }
-
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedInNextStatement()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
             
             namespace TestNamespace
@@ -51,7 +41,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -83,7 +73,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked_Tuple()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -115,7 +105,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked_Tuple2()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -147,7 +137,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked_Tuple3()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -185,7 +175,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task Diagnostic_WhenErrorIsCheckedButNotInNextStatement()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -221,7 +211,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithNegation()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -248,7 +238,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithComparison()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -275,7 +265,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithNotEqual()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -302,7 +292,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsNotFromMethodCall()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -324,7 +314,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorNone()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -346,7 +336,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorEmpty()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -368,7 +358,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsLastStatementInVoidMethod()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -391,7 +381,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task Diagnostic_WithMultipleErrors_AllUnchecked()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -435,7 +425,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenChecked_WithExplicitErrorType()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -462,7 +452,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenVariableHasNoInitializer()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -484,7 +474,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorInComplexCondition()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
 
             namespace TestNamespace
@@ -511,7 +501,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task Diagnostic_WhenAwaitedErrorIsNotChecked()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
             using System.Threading.Tasks;
 
@@ -544,7 +534,7 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task Diagnostic_WhenAwaitedTupleErrorIsNotChecked()
     {
-        var test = CreateTest("""
+        var test = CreateTest(/* lang=c#-test */"""
             using Errgo;
             using System.Threading.Tasks;
 
@@ -572,5 +562,20 @@ public class ErrgoAnalyzerTests
             .WithArguments("err"));
 
         await test.RunAsync();
+    }
+
+    private static readonly ReferenceAssemblies ReferenceAssemblies = ReferenceAssemblies.Net.Net80;
+
+    private static CSharpAnalyzerTest<ErrgoAnalyzer, Microsoft.CodeAnalysis.Testing.Verifiers.XUnitVerifier> CreateTest(string code)
+    {
+        var test = new CSharpAnalyzerTest<ErrgoAnalyzer, Microsoft.CodeAnalysis.Testing.Verifiers.XUnitVerifier>
+        {
+            TestCode = code,
+            ReferenceAssemblies = ReferenceAssemblies,
+        };
+
+        test.TestState.AdditionalReferences.Add(typeof(Error).Assembly);
+
+        return test;
     }
 }
