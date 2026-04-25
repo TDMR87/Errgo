@@ -1,4 +1,4 @@
-﻿namespace Errgo.Examples;
+namespace Errgo.Examples;
 
 public record class GameSession(string Hash);
 public record User(int Id, string Name);
@@ -6,11 +6,11 @@ public record User(int Id, string Name);
 public static class Errors
 {
     // Define sentinel errors as static readonly fields for reusability
-    public static readonly Error HashNotUnique = Error.Sentinel("Hash already exists");
-    public static readonly Error DatabaseConnectionFailed = Error.Sentinel("Database connection failed");
-    public static readonly Error NotFound = Error.Sentinel("Item not found");
-    public static readonly Error ValidationFailed = Error.Sentinel("Validation failed");
-    public static readonly Error Unauthorized = Error.Sentinel("Unauthorized access");
+    public static readonly Error HashNotUnique      = Error.Sentinel("Hash already exists");
+    public static readonly Error DbConnectionFailed = Error.Sentinel("Database connection failed");
+    public static readonly Error NotFound           = Error.Sentinel("Not found");
+    public static readonly Error ValidationFailed   = Error.Sentinel("Validation failed");
+    public static readonly Error Unauthorized       = Error.Sentinel("Unauthorized");
 }
 
 class MyType
@@ -26,13 +26,13 @@ public class Examples
         var errors = Error.Empty;
 
         var (isValid, err) = ValidateEmail("invalid-email@domain.com");
-        if (err) errors.Join(err);
+        if (err) errors = Error.Join(errors, err);
 
         (isValid, err) = ValidateAge(-5);
-        if (err) errors.Join(err);
+        if (err) errors = Error.Join(errors, err);
 
         (isValid, err) = ValidateUsername("");
-        if (err) errors.Join(err);
+        if (err) errors = Error.Join(errors, err);
 
         if (errors)
         {

@@ -1,6 +1,6 @@
 namespace Errgo.Tests;
 
-public class ErrorSourceLocationTests
+public class ErrorSourceLocationInfoTests
 {
     private static (object?, Error) GetDatabaseError() => (null, new Error("Database connection failed"));
     private static (object?, Error) GetErrorWithoutMessage() => (null, new Error(message: null));
@@ -13,13 +13,13 @@ public class ErrorSourceLocationTests
         // Error properties contain the full details
         Assert.Equal("Database connection failed", err.Message);
         Assert.Equal("GetDatabaseError", err.SourceMemberName);
-        Assert.Contains("ErrorSourceLocationTests.cs", err.SourceFilepath);
+        Assert.Contains(nameof(ErrorSourceLocationInfoTests), err.SourceFilepath);
         Assert.True(err.SourceLineNumber > 0);
         
         // Stack includes location info
         Assert.Contains("Database connection failed", err.Stack);
         Assert.Contains("GetDatabaseError", err.Stack);
-        Assert.Contains("ErrorSourceLocationTests.cs", err.Stack);
+        Assert.Contains(nameof(ErrorSourceLocationInfoTests), err.Stack);
     }
 
     [Fact]
@@ -30,12 +30,12 @@ public class ErrorSourceLocationTests
         // Even without a message, source location should be visible
         Assert.Equal("Unknown error", err.Message);
         Assert.Equal("GetErrorWithoutMessage", err.SourceMemberName);
-        Assert.Contains("ErrorSourceLocationTests.cs", err.SourceFilepath);
+        Assert.Contains(nameof(ErrorSourceLocationInfoTests), err.SourceFilepath);
         Assert.True(err.SourceLineNumber > 0);
         
         var stack = err.Stack;
         Assert.Contains("Unknown error at GetErrorWithoutMessage", stack);
-        Assert.Contains("ErrorSourceLocationTests.cs", stack);
+        Assert.Contains(nameof(ErrorSourceLocationInfoTests), stack);
     }
 
     [Fact]
@@ -49,6 +49,6 @@ public class ErrorSourceLocationTests
         
         // Inner error without message should still show its source location
         Assert.Contains("Unknown error at GetErrorWithoutMessage", err.Stack);
-        Assert.Contains("ErrorSourceLocationTests.cs", err.Stack);
+        Assert.Contains(nameof(ErrorSourceLocationInfoTests), err.Stack);
     }
 }

@@ -9,7 +9,7 @@ public readonly record struct Error
     private readonly string?  sourceMemberName;
     private readonly string?  sourceFilePath;
     private readonly int?     sourceLineNumber;
-    private readonly Error[]?  innerErrors;
+    private readonly Error[]? innerErrors;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -30,7 +30,7 @@ public readonly record struct Error
     /// <summary>
     /// Creates an error with the specified message.
     /// </summary>
-    /// <param name="message">The error message. If null, defaults to <see cref="Constants.DefaultErrorMessage"/>.</param>
+    /// <param name="message">The error message. If null, defaults to default error message.</param>
     /// <param name="memberName">The member name where the error occurred. Automatically filled by the compiler.</param>
     /// <param name="filePath">The source file path where the error occurred. Automatically filled by the compiler.</param>
     /// <param name="lineNumber">The line number where the error occurred. Automatically filled by the compiler.</param>
@@ -56,7 +56,7 @@ public readonly record struct Error
     /// <summary>
     /// Creates an error with the specified message and wraps an inner error, forming an error chain.
     /// </summary>
-    /// <param name="message">The error message for this error. If null, defaults to "Unknown error".</param>
+    /// <param name="message">The error message for this error. If null, default error message.</param>
     /// <param name="error">The inner error to wrap in the chain.</param>
     /// <param name="memberName">The member name where the error occurred. Automatically filled by the compiler.</param>
     /// <param name="filePath">The source file path where the error occurred. Automatically filled by the compiler.</param>
@@ -106,6 +106,22 @@ public readonly record struct Error
         this.innerErrors = null;
     }
 
+    private Error(
+        bool isError,
+        string? message,
+        string? sourceMemberName,
+        string? sourceFilePath,
+        int? sourceLineNumber,
+        Error[]? innerErrors)
+    {
+        this.isError = isError;
+        this.message = message;
+        this.sourceMemberName = sourceMemberName;
+        this.sourceFilePath = sourceFilePath;
+        this.sourceLineNumber = sourceLineNumber;
+        this.innerErrors = innerErrors;
+    }
+
     /// <summary>
     /// Implicit conversion from Error to bool.
     /// Error.None must evaluate to false, any other Error evaluates to true.
@@ -144,6 +160,97 @@ public readonly record struct Error
     /// </remarks>
     /// <returns>An <see cref="Error"/> object initialized with the specified message and default values for other properties.</returns>
     public static Error Sentinel(string message) => new(message, null, null, null);
+
+    /// <summary>
+    /// Combines the given errors, discarding any null or non-error values.
+    /// Returns <see cref="Error.None"/> if every value in <paramref name="errors"/> is null or non-error.
+    /// The first valid error becomes the root error; its existing inner chain is preserved,
+    /// and additional valid errors are appended to that chain in argument order.
+    /// </summary>
+    /// <remarks>
+    /// An <see cref="Error"/> value returned by Join exposes joined errors through <see cref="InnerErrors"/>.
+    /// Joined errors may be inspected with <see cref="Is"/> and <see cref="As"/>.
+    /// </remarks>
+    /// <param name="errors">Errors to join.</param>
+    /// <returns>
+    /// <see cref="Error.None"/> if every value in <paramref name="errors"/> is null or non-error;
+    /// otherwise an aggregated <see cref="Error"/>.
+    /// </returns>
+    public static Error Join(params Error?[]? errors)
+    {
+        if (errors is null || errors.Length == 0) return None;
+
+        var validErrors = new List<Error>(errors.Length);
+        for (int i = 0; i < errors.Length; i++)
+        {
+            if (errors[i] is Error e && e.isError)
+            {
+                validErrors.Add(e);
+            }
+        }
+
+        if (validErrors.Count == 0) return None;
+        if (validErrors.Count == 1) return validErrors[0];
+
+        var rootError = validErrors[0];
+        int firstErrInnerCount = rootError.innerErrors?.Length ?? 0;
+
+        var mergedErrors = new Error[firstErrInnerCount + (validErrors.Count - 1)];
+
+        int destinationIndex = 0;
+        if (firstErrInnerCount > 0)
+        {
+            // Root error's inner errors are placed first
+            Array.Copy(
+                sourceArray: rootError.innerErrors, 
+                sourceIndex: 0, 
+                destinationArray: mergedErrors, 
+                destinationIndex: 0, 
+                length: firstErrInnerCount);
+
+            destinationIndex = firstErrInnerCount;
+        }
+
+        // Skipping the root error, append the additional errors
+        for (int i = 1; i < validErrors.Count; i++)
+        {
+            mergedErrors[destinationIndex++] = validErrors[i];
+        }
+
+        return new Error(
+            isError: rootError.isError,
+            message: rootError.message,
+            sourceMemberName: rootError.sourceMemberName,
+            sourceFilePath: rootError.sourceFilePath,
+            sourceLineNumber: rootError.sourceLineNumber,
+            innerErrors: mergedErrors);
+    }
+
+    /// <summary>
+    /// Combines <paramref name="root"/> and the given <paramref name="errors"/>, 
+    /// prepending <paramref name="root"/> to <paramref name="errors"/> and discarding any null or non-error values.
+    /// </summary>
+    /// <remarks>
+    /// The first valid error in the combined sequence becomes the resulting root error.
+    /// Joined errors may be inspected with <see cref="InnerErrors"/>, <see cref="Is"/>, and <see cref="As"/>.
+    /// </remarks>
+    /// <param name="root">Root error to prepend in to the chain.</param>
+    /// <param name="errors">Additional errors to join.</param>
+    /// <returns>
+    /// <see cref="Error.None"/> if neither <paramref name="root"/> nor <paramref name="errors"/> contain an error;
+    /// otherwise an aggregated <see cref="Error"/>.
+    /// </returns>
+    public static Error Join(Error root, Error?[]? errors)
+    {
+        if (errors is null || errors.Length == 0) return root;
+
+        // Prepend root to the error chain and delegate to the variadic Join logic
+        var combinedErrors = new Error?[errors.Length + 1];
+        combinedErrors[0] = root;
+        Array.Copy(errors, 0, combinedErrors, 1, errors.Length);
+
+        return Join(combinedErrors);
+    }
 
     /// <summary>
     /// Gets the message associated with this error, without source location information.
@@ -309,54 +416,6 @@ public readonly record struct Error
         }
 
         return false;
-    }
-
-    /// <summary>
-    /// Joins the specified errors into the inner error chain of this error.
-    /// Errors are always prepended to the error chain (most recent first).
-    /// </summary>
-    /// <param name="errors">Errors to add to the chain</param>
-    public void Join(params Error[]? errors)
-    {
-        if (errors == null || errors.Length == 0) return;
-
-        for (int i = errors.Length - 1; i >= 0; i--)
-        {
-            var error = errors[i];
-            if (error.isError)
-            {
-                PrependInnerErrors(error);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Adds the specified error to the front of the inner error chain of this error instance.
-    /// Error.None errors are ignored and are not added to the chain.
-    /// </summary>
-    /// <param name="error"></param>
-    private void PrependInnerErrors(Error error)
-    {
-        if (!error.isError) return;
-
-        if (this.innerErrors is null)
-        {
-            Unsafe.AsRef(in this.innerErrors) = [error];
-            return;
-        }
-
-        // Make an array that fits the existing errors + the new error to prepend
-        var newArray = new Error[this.innerErrors.Length + 1];
-        newArray[0] = error; // The new error goes at the front of the chain
-
-        Array.Copy(
-            sourceArray: this.innerErrors,
-            destinationArray: newArray,
-            sourceIndex: 0, 
-            destinationIndex: 1, // Copy after the newly added error
-            length: this.innerErrors.Length);
-
-        Unsafe.AsRef(in this.innerErrors) = newArray;
     }
 
     /// <summary>

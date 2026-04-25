@@ -74,4 +74,23 @@ public class ErrorConstructorTests
         Assert.Equal("Outer", err.Message);
         Assert.Empty(err.InnerErrors);
     }
+
+    [Fact]
+    public void Error_Constructor_WrappingError()
+    {
+        var err = new Error("Outer", new Error("Inner"));
+        Assert.Equal("Outer", err.Message);
+        Assert.Equal("Inner", err.InnerErrors[0].Message);
+    }
+
+    [Fact]
+    public void Error_DefaultInArray_IsErrorNone()
+    {
+        var errors = new Error[3];
+
+        Assert.Equal(Error.None, errors[0]);
+        Assert.Equal(Error.None, errors[1]);
+        Assert.Equal(Error.None, errors[2]);
+        Assert.DoesNotContain(Error.Empty, errors);
+    }
 }

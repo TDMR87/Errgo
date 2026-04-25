@@ -73,9 +73,10 @@ public class ErrorAsTests
     {
         var sentinel = Error.Sentinel("Database error");
         var outer = Error.Empty;
-        outer.Join(sentinel);
+        outer = Error.Join(outer, sentinel);
         Assert.Empty(outer.Message);
         Assert.True(outer.As(sentinel, out var match));
         Assert.Equal(sentinel, match);
     }
 }
+

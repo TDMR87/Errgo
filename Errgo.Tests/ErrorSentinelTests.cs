@@ -68,7 +68,7 @@ public class ErrorSentinelTests
     {
         var err = new Error($"Some error happened", Errors.NotFound);
         var joiner = Error.Empty;
-        joiner.Join(err);
+        joiner = Error.Join(joiner, err);
         Assert.True(joiner);
         Assert.Contains("Some error happened", joiner.Stack);
         Assert.Contains("Item not found", joiner.Stack);
@@ -89,3 +89,4 @@ public class ErrorSentinelTests
         Assert.Contains($"Item not found", err.Stack);
     }
 }
+

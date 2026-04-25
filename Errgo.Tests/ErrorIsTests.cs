@@ -71,7 +71,7 @@ public class ErrorIsTests
         var err1 = new Error("Duplicate");
         var err2 = new Error("Duplicate");
         var chain = new Error("Outer", err1);
-        chain.Join(err2);
+        chain = Error.Join(chain, err2);
 
         Assert.True(chain.Is(new Error("Duplicate")));
     }
@@ -82,11 +82,11 @@ public class ErrorIsTests
         var err1 = new Error("Duplicate");
         var err2 = new Error("Duplicate");
         var chain = new Error("Outer");
-        chain.Join(err1);
-        chain.Join(err2);
+        chain = Error.Join(chain, err1);
+        chain = Error.Join(chain, err2);
 
         Assert.True(chain.As(new Error("Duplicate"), out var match));
-        // Should find the first occurrence (most recent join)
+        // Should find the first occurrence in traversal order.
         Assert.Equal("Duplicate", match.Message);
     }
 
@@ -156,7 +156,7 @@ public class ErrorIsTests
         var err3 = new Error("Error 3");
 
         var joiner = new Error("Joiner");
-        joiner.Join(err1, err2, err3);
+        joiner = Error.Join(joiner, err1, err2, err3);
 
         Assert.True(joiner.Is(new Error("Error 2")));
         Assert.True(joiner.Is(new Error("Error 1")));
@@ -172,7 +172,7 @@ public class ErrorIsTests
         var err3 = new Error("Error 3");
 
         var joiner = new Error("Joiner");
-        joiner.Join(err1, err2, err3);
+        joiner = Error.Join(joiner, err1, err2, err3);
 
         Assert.True(joiner.As(new Error("Error 2"), out var match));
         Assert.Equal("Error 2", match.Message);
@@ -185,7 +185,7 @@ public class ErrorIsTests
         var joiner = new Error("Joiner", constructorErr);
 
         var joinErr = new Error("Join Error");
-        joiner.Join(joinErr);
+        joiner = Error.Join(joiner, joinErr);
 
         Assert.True(joiner.Is(new Error("Constructor Error")));
         Assert.True(joiner.Is(new Error("Join Error")));
@@ -196,8 +196,9 @@ public class ErrorIsTests
     {
         var sentinel = Error.Sentinel("Database error");
         var outer = Error.Empty;
-        outer.Join(sentinel);
+        outer = Error.Join(outer, sentinel);
         Assert.Empty(outer.Message);
         Assert.True(outer.Is(sentinel)); // Should find in inner errors even though outer message is empty
     }
 }
+

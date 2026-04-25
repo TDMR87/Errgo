@@ -50,7 +50,7 @@ public class PerformanceBenchmarks
     public Error JoinSingleError()
     {
         var err = new Error("Original");
-        err.Join(new Error("Additional error"));
+        err = Error.Join(err, new Error("Additional error"));
         return err;
     }
 
@@ -118,3 +118,4 @@ public class PerformanceBenchmarks
     private Error DeepCallStack_9() => DeepCallStack_10();
     private Error DeepCallStack_10() => new Error("Operation failed");
 }
+

@@ -47,7 +47,7 @@ public class ErrorStackTests
         var err3 = new Error("\n\n");
         
         var outer = new Error("Valid");
-        outer.Join(err1, err2, err3);
+        outer = Error.Join(outer, err1, err2, err3);
         
         var stack = outer.Stack;
         var lines = stack.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
@@ -150,7 +150,7 @@ public class ErrorStackTests
         var validationError = new Error("Validation error");
 
         var rootError = new Error("Root error");
-        rootError.Join(dbError, validationError);
+        rootError = Error.Join(rootError, dbError, validationError);
 
         // Act: Get stacks from different perspectives
         var rootStack = rootError.Stack;
@@ -181,7 +181,7 @@ public class ErrorStackTests
         var inner2 = new Error("Inner 2", inner1);
 
         var outer = new Error("Outer");
-        outer.Join(inner2);
+        outer = Error.Join(outer, inner2);
 
         // Act
         var outerStack = outer.Stack;
@@ -232,3 +232,4 @@ public class ErrorStackTests
         Assert.Contains(err3.InnerErrors, e => e.Message == "Error 1");
     }
 }
+

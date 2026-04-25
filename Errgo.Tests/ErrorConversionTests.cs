@@ -3,10 +3,17 @@ namespace Errgo.Tests;
 public class ErrorConversionTests
 {
     [Fact]
+    public void Error_ImplicitBoolConversion()
+    {
+        var err = new Error("Test");
+        Assert.True(true == err);
+    }
+
+    [Fact]
     public void Error_ImplicitBoolConversion_ErrorWithMessage_ReturnsTrue()
     {
-        var errorWithMessage = new Error("Test");
-        Assert.True(errorWithMessage);
+        var err = new Error("Test");
+        Assert.True(err);
     }
 
     [Fact]

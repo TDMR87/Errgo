@@ -1,6 +1,6 @@
 namespace Errgo.Tests;
 
-public class ErrorStringRepresentationTests
+public class ErrorToStringTests
 {
     [Fact]
     public void Error_Details_MatchesToString()
@@ -12,7 +12,7 @@ public class ErrorStringRepresentationTests
     [Fact]
     public void Error_ToString_WithNoSourceLocation_ReturnsMessageOnly()
     {
-        var err = new Error("Test", "", "", 0);
-        Assert.Equal("Test", err.ToString());
+        var err = new Error("message", "", "", 0);
+        Assert.Equal("message", err.ToString());
     }
 }

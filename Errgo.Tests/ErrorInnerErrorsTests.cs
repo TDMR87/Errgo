@@ -25,7 +25,7 @@ public class ErrorInnerErrorsTests
         var err3 = new Error("Third");
         
         var joiner = new Error("Joiner");
-        joiner.Join(err1, err2, err3);
+        joiner = Error.Join(joiner, err1, err2, err3);
 
         var innerErrors = joiner.InnerErrors;
         Assert.Equal(3, innerErrors.Count);  // Only the joined errors, not "Joiner" itself
@@ -34,3 +34,4 @@ public class ErrorInnerErrorsTests
         Assert.Equal("Third", innerErrors[2].Message);
     }
 }
+

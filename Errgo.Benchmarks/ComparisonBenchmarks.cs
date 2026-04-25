@@ -138,7 +138,7 @@ public class ComparisonBenchmarks
         var thirdError = new Errgo.Error("Final error", secondError);
 
         var rootError = new Error("Root error");
-        rootError.Join(thirdError);
+        rootError = Error.Join(rootError, thirdError);
         return rootError;
     }
 
