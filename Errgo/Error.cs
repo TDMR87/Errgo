@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Errgo;
 
@@ -46,7 +47,9 @@ public readonly record struct Error
         [CallerLineNumber] int? lineNumber = null)
     {
         this.isError = true;
-        this.message = message ?? Constants.DefaultErrorMessage;
+        this.message = message is null || (message.Length > 0 && string.IsNullOrWhiteSpace(message))
+            ? Constants.DefaultErrorMessage
+            : message;
         this.sourceMemberName = memberName;
         this.sourceFilePath = filePath;
         this.sourceLineNumber = lineNumber;
@@ -75,7 +78,9 @@ public readonly record struct Error
         [CallerLineNumber] int? lineNumber = null)
     {
         this.isError = true;
-        this.message = message ?? Constants.DefaultErrorMessage;
+        this.message = message is null || (message.Length > 0 && string.IsNullOrWhiteSpace(message))
+            ? Constants.DefaultErrorMessage
+            : message;
         this.sourceMemberName = memberName;
         this.sourceFilePath = filePath;
         this.sourceLineNumber = lineNumber;
@@ -284,15 +289,27 @@ public readonly record struct Error
     {
         get
         {
-            var lines = new List<string> { this.ToString() };
+            var lines = new List<string>();
+
+            {
+                if (this.ToString() is string errStr && !string.IsNullOrWhiteSpace(errStr))
+                {
+                    lines.Add(errStr);
+                }
+            }
 
             if (innerErrors is not null)
             {
-                // Use the public member to get the recursively flattened list of errors
-                lines.AddRange(InnerErrors.Select(e => e.ToString()));
+                foreach (var error in FlattenInnerErrors())
+                {
+                    if (error.ToString() is string errStr && !string.IsNullOrWhiteSpace(errStr))
+                    {
+                        lines.Add(errStr);
+                    }
+                }
             }
 
-            return string.Join(Environment.NewLine, lines.Where(l => !string.IsNullOrWhiteSpace(l)));
+            return string.Join(Environment.NewLine, lines);
         }
     }
 
@@ -325,20 +342,28 @@ public readonly record struct Error
     /// Recursively gets all inner errors in the error chain as a flat list (excluding the current error itself).
     /// </summary>
     /// <remarks>
-    /// This property traverses through the entire error chain and collects all inner errors into a single flat list.
+    /// This property traverses through the entire inner error chain 
+    /// and collects all inner errors into a single flat list.
+    /// Do not use this property to check for the presence of a specific error in the chain, 
+    /// as it may be inefficient for long chains.
+    /// If you need to run many queries over the same snapshot, 
+    /// materializing a collection once via <see cref="InnerErrors"/> and reusing it can be reasonable.
     /// Use <see cref="Is"/> to check if a specific error exists in the chain.
     /// Use <see cref="As"/> to find and extract a specific error from the chain.
     /// </remarks>
-    public IReadOnlyList<Error> InnerErrors
+    public IReadOnlyList<Error> InnerErrors => FlattenInnerErrors();
+
+    /// <summary>
+    /// Creates a flat list of all inner errors in the error chain, excluding the current error itself.
+    /// </summary>
+    /// <returns>A read-only list of all inner errors in the chain.</returns>
+    private IReadOnlyList<Error> FlattenInnerErrors()
     {
-        get
-        {
-            List<Error> flatList = [];
-            if (!this.isError) return flatList;
-            if (this.innerErrors is null) return flatList;
-            CollectErrorsRecursively(this.innerErrors, flatList);
-            return flatList;
-        }
+        List<Error> flatList = [];
+        if (!this.isError) return flatList;
+        if (this.innerErrors is null) return flatList;
+        CollectErrorsRecursively(this.innerErrors, flatList);
+        return flatList;
     }
 
     /// <summary>
@@ -373,6 +398,7 @@ public readonly record struct Error
     {
         if (!this.isError && !target.isError) return true;
         if (!this.isError || !target.isError) return false;
+
         if (this.message is not null && this.message.Equals(target.message, StringComparison.Ordinal))
         {
             return true;
@@ -404,6 +430,7 @@ public readonly record struct Error
 
         if (!this.isError) return false;
         if (!target.isError) return false;
+
         if (this.message is not null && this.message.Equals(target.message, StringComparison.Ordinal))
         {
             match = this;

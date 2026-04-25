@@ -23,7 +23,7 @@ public class ErrorStackTests
 
         Assert.Contains("Outer error", outer.Stack);
         Assert.Contains("Middle error", outer.Stack);
-        Assert.Contains("   ", outer.Stack);
+        Assert.DoesNotContain("   ", outer.Stack);
     }
 
     [Fact]
