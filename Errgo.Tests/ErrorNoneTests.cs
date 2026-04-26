@@ -31,11 +31,11 @@ public class ErrorNoneTests
     }
 
     [Fact]
-    public void Error_Default_IsSameAsErrorNone()
+    public void Error_Default_IsNotSameAsErrorNone()
     {
         Error defaultErr = default;
         
-        Assert.Equal(Error.None, defaultErr);
-        Assert.False(defaultErr);
+        Assert.NotEqual(Error.None, defaultErr);
+        Assert.True(defaultErr);
     }
 }

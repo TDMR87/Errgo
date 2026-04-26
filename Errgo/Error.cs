@@ -4,12 +4,21 @@ namespace Errgo;
 
 public readonly record struct Error
 {
-    private readonly bool     isError;
+    
+
     private readonly string?  message;
     private readonly string?  sourceMemberName;
     private readonly string?  sourceFilePath;
     private readonly int?     sourceLineNumber;
     private readonly Error[]? innerErrors;
+
+    /// <summary>
+    /// THe two flags distinguish runtime-default values from explicitly constructed values.
+    /// default(Error) (isConstructed=false and isExplicitError=false) is still treated as an error.
+    /// Error.None (isConstructed=true and isExplicitError=false) is treated as a non-error.
+    /// </summary>
+    private readonly bool isConstructed;
+    private readonly bool isExplicitError;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -20,12 +29,13 @@ public readonly record struct Error
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Error()
     {
-        this.isError          = true;
-        this.message          = Constants.DefaultErrorMessage;
+        this.isConstructed    = true;
+        this.isExplicitError = true;
         this.sourceMemberName = null;
         this.sourceFilePath   = null;
         this.sourceLineNumber = null;
         this.innerErrors      = null;
+        this.message          = Constants.DefaultErrorMessage;
     }
 
     /// <summary>
@@ -47,12 +57,13 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.isError          = true;
-        this.message          = NormalizeMessage(message);
+        this.isConstructed    = true;
+        this.isExplicitError = true;
         this.sourceMemberName = memberName;
         this.sourceFilePath   = filePath;
         this.sourceLineNumber = lineNumber;
         this.innerErrors      = null;
+        this.message          = NormalizeMessage(message);
     }
 
     /// <summary>
@@ -77,26 +88,24 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.isError          = true;
-        this.message          = NormalizeMessage(message);
+        this.isConstructed    = true;
+        this.isExplicitError  = true;
         this.sourceMemberName = memberName;
         this.sourceFilePath   = filePath;
         this.sourceLineNumber = lineNumber;
-
-        if (error.isError) this.innerErrors = [error];
+        this.message          = NormalizeMessage(message);
+        if (error.IsError) this.innerErrors = [error];
     }
 
     /// <summary>
-    /// For internal use only. Creates an Error with the specified isError state.
-    /// 
-    /// NOTES:
-    /// Constructing an Error.None with this is faster than using => default;
+    /// For internal use only (Error.None). Creates an Error with the specified isError state.
     /// </summary>
     /// <param name="isError"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Error(bool isError)
     {
-        this.isError          = isError;
+        this.isConstructed    = true;
+        this.isExplicitError = isError;
         this.message          = null;
         this.sourceMemberName = null;
         this.sourceFilePath   = null;
@@ -113,7 +122,8 @@ public readonly record struct Error
         int? sourceLineNumber,
         Error[]? innerErrors)
     {
-        this.isError          = isError;
+        this.isConstructed    = true;
+        this.isExplicitError = isError;
         this.message          = message;
         this.sourceMemberName = sourceMemberName;
         this.sourceFilePath   = sourceFilePath;
@@ -126,7 +136,15 @@ public readonly record struct Error
     /// Error.None must evaluate to false, any other Error evaluates to true.
     /// </summary>
     /// <param name="error"></param>
-    public static implicit operator bool(Error error) => error.isError;
+    public static implicit operator bool(Error error) => error.IsError;
+
+    /// <summary>
+    /// Determines whether the current error instance represents an error or a non-error (Error.None)
+    /// </summary>
+    /// <remarks>
+    /// Always use this property to check if an Error instance represents an error or not.
+    /// </remarks>
+    private bool IsError => !isConstructed || isExplicitError;
 
     /// <summary>
     /// Returns an non-Error with zeroed values. 
@@ -182,7 +200,7 @@ public readonly record struct Error
         var validErrors = new List<Error>(errors.Length);
         for (int i = 0; i < errors.Length; i++)
         {
-            if (errors[i] is Error e && e.isError)
+            if (errors[i] is Error e && e.IsError)
             {
                 validErrors.Add(e);
             }
@@ -217,7 +235,7 @@ public readonly record struct Error
         }
 
         return new Error(
-            isError: rootError.isError,
+            isError: rootError.IsError,
             message: rootError.message,
             sourceMemberName: rootError.sourceMemberName,
             sourceFilePath: rootError.sourceFilePath,
@@ -314,7 +332,7 @@ public readonly record struct Error
     /// Returns an empty string for Error.None.</returns>
     public override string ToString()
     {
-        if (!this.isError) return string.Empty;
+        if (!this.IsError) return string.Empty;
 
         var hasMemberName = !string.IsNullOrWhiteSpace(this.sourceMemberName);
         if (!hasMemberName) return this.message ?? string.Empty;
@@ -358,7 +376,7 @@ public readonly record struct Error
     private IReadOnlyList<Error> FlattenInnerErrors()
     {
         List<Error> flatList = [];
-        if (!this.isError) return flatList;
+        if (!this.IsError) return flatList;
         if (this.innerErrors is null) return flatList;
         CollectErrorsRecursively(this.innerErrors, flatList);
         return flatList;
@@ -394,18 +412,15 @@ public readonly record struct Error
     /// <returns>True if this error or any wrapped error has the same message as the target; otherwise, false</returns>
     public bool Is(Error target)
     {
-        if (!this.isError && !target.isError) return true;
-        if (!this.isError || !target.isError) return false;
+        if (!this.IsError && !target.IsError) return true;
+        if (!this.IsError || !target.IsError) return false;
+        if (!this.isConstructed && !target.isConstructed) return true;
 
         if (this.message is not null && this.message.Equals(target.message, StringComparison.Ordinal))
-        {
             return true;
-        }
 
         foreach (var innerError in innerErrors ?? [])
-        {
             if (innerError.Is(target)) return true;
-        }
 
         return false;
     }
@@ -426,8 +441,13 @@ public readonly record struct Error
     {
         match = Error.None;
 
-        if (!this.isError) return false;
-        if (!target.isError) return false;
+        if (!this.IsError) return false;
+        if (!target.IsError) return false;
+        if (!this.isConstructed && !target.isConstructed)
+        {
+            match = this;
+            return true;
+        }
 
         if (this.message is not null && this.message.Equals(target.message, StringComparison.Ordinal))
         {
@@ -447,17 +467,19 @@ public readonly record struct Error
     /// Determines whether the current error is equal to the specified error.
     /// </summary>
     /// <remarks>This method ignores source location and compares only the error state and message text. 
+    /// Message comparison is case-sensitive and ordinal.
     /// Use this method when equality should not consider where the error originated.</remarks>
     /// <param name="other">The error to compare with the current error.</param>
     /// <returns>true if both errors have the same error state and, if present, identical message text; otherwise, false.</returns>
     public bool Equals(Error other)
     {
-        if (!this.isError && !other.isError) return true;
-        if (!this.isError || !other.isError) return false;
+        if (this.isConstructed != other.isConstructed) return false;
+        if (!this.IsError && !other.IsError) return true;
+        if (!this.IsError || !other.IsError) return false;
+        if (message is null && other.message is null) return true;
         if (message is null || other.message is null) return false;
 
-        return (isError == true && other.isError == true) && 
-               (message.Equals(other.message, StringComparison.Ordinal));
+        return message.Equals(other.message, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -470,26 +492,21 @@ public readonly record struct Error
     /// </returns>
     public override int GetHashCode()
     {
-        if (!this.isError) return 0;
+        if (!this.isConstructed) return -1;
+        if (!this.IsError) return 0;
         return this.message?.GetHashCode() ?? 0;
     }
 
     private static string NormalizeMessage(string? message)
     {
         if (message is null)
-        {
             return Constants.DefaultErrorMessage;
-        }
 
         if (message.Length == 0)
-        {
             return message;
-        }
 
         if (!char.IsWhiteSpace(message[0]))
-        {
             return message;
-        }
 
         return string.IsNullOrWhiteSpace(message) ? Constants.DefaultErrorMessage : message;
     }

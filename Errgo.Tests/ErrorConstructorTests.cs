@@ -88,10 +88,10 @@ public class ErrorConstructorTests
     {
         var errors = new Error[3];
 
-        Assert.Equal(Error.None, errors[0]);
-        Assert.Equal(Error.None, errors[1]);
-        Assert.Equal(Error.None, errors[2]);
-        Assert.DoesNotContain(Error.Empty, errors);
+        Assert.Equal(default, errors[0]);
+        Assert.Equal(default, errors[1]);
+        Assert.Equal(default, errors[2]);
+        Assert.DoesNotContain(Error.None, errors);
     }
 
     [Fact]
