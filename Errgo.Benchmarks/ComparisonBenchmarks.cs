@@ -1,8 +1,10 @@
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Order;
 using ErrorOr;
 using FluentResults;
 using Ardalis.Result;
+using System.Runtime.CompilerServices;
 
 namespace Errgo.Benchmarks;
 
@@ -11,82 +13,86 @@ namespace Errgo.Benchmarks;
 [RankColumn]
 public class ComparisonBenchmarks
 {
-    [Benchmark(Description = "Propagate through 10 method calls - Ardalis")]
-    public Ardalis.Result.Result<int> PropagateThroughDeepCallStack_Ardalis()
+    private readonly Consumer consumer = new();
+
+    [Benchmark(Description = "Propagate error through 10 method calls - Ardalis")]
+    public void PropagateThroughDeepCallStack_Ardalis()
     {
-        return DeepCallStack_Ardalis_1();
+        consumer.Consume(DeepCallStack_Ardalis_1());
     }
 
-    [Benchmark(Description = "Propagate through 10 method calls - Errgo")]
-    public Errgo.Error PropagateThroughDeepCallStack_Errgo()
+    [Benchmark(Description = "Propagate error through 10 method calls - Errgo")]
+    public void PropagateThroughDeepCallStack_Errgo()
     {
-        return DeepCallStack_Errgo_1();
+        consumer.Consume(DeepCallStack_Errgo_1());
     }
 
-    [Benchmark(Description = "Propagate through 10 method calls - LightResults")]
-    public LightResults.Result PropagateThroughDeepCallStack_LightResults()
+    [Benchmark(Description = "Propagate error through 10 method calls - LightResults")]
+    public void PropagateThroughDeepCallStack_LightResults()
     {
-        return DeepCallStack_LightResults_1();
+        consumer.Consume(DeepCallStack_LightResults_1());
     }
 
-    [Benchmark(Description = "Propagate through 10 method calls - ErrorOr")]
-    public ErrorOr<int> PropagateThroughDeepCallStack_ErrorOr()
+    [Benchmark(Description = "Propagate error through 10 method calls - ErrorOr")]
+    public void PropagateThroughDeepCallStack_ErrorOr()
     {
-        return DeepCallStack_ErrorOr_1();
+        consumer.Consume(DeepCallStack_ErrorOr_1());
     }
 
-    [Benchmark(Description = "Propagate through 10 method calls - Exception")]
-    public Exception PropagateThroughDeepCallStack_Exception()
+    [Benchmark(Description = "Propagate error through 10 method calls - Exception")]
+    public void PropagateThroughDeepCallStack_Exception()
     {
         try
         {
             DeepCallStack_Exception_1();
-            return new Exception("err");
+            consumer.Consume(new Exception("err"));
         }
         catch (Exception ex)
         {
-            return ex;
+            consumer.Consume(ex);
         }
     }
 
-    [Benchmark(Description = "Propagate through 10 method calls - FluentResults")]
-    public FluentResults.Result PropagateThroughDeepCallStack_FluentResults()
+    [Benchmark(Description = "Propagate error through 10 method calls - FluentResults")]
+    public void PropagateThroughDeepCallStack_FluentResults()
     {
-        return DeepCallStack_FluentResults_1();
+        consumer.Consume(DeepCallStack_FluentResults_1());
     }
 
     [Benchmark(Description = "Return unsuccessful result - Ardalis")]
-    public Ardalis.Result.Result<int> CreateError_Ardalis()
+    public void CreateError_Ardalis()
     {
-        return Ardalis.Result.Result<int>.Error("Operation failed");
+        consumer.Consume(Ardalis.Result.Result<int>.Error("Operation failed"));
     }
 
     [Benchmark(Description = "Return unsuccessful result - Errgo")]
-    public (int?, Errgo.Error) CreateError_Errgo()
+    public void CreateError_Errgo()
     {
-        return (null, new Error("Operation failed"));
+        (int?, Error) result = (null, new Error("Operation failed"));
+        consumer.Consume(result);
     }
 
     [Benchmark(Description = "Return unsuccessful result - ErrorOr")]
-    public ErrorOr<int> CreateError_ErrorOr()
+    public void CreateError_ErrorOr()
     {
-        return ErrorOr.Error.Failure(description: "Operation failed");
+        ErrorOr<int> result = ErrorOr.Error.Failure(description: "Operation failed");
+        consumer.Consume(result);
     }
 
     [Benchmark(Description = "Return unsuccessful result - FluentResults")]
-    public FluentResults.Result CreateError_FluentResults()
+    public void CreateError_FluentResults()
     {
-        return FluentResults.Result.Fail("Operation failed");
+        consumer.Consume(FluentResults.Result.Fail("Operation failed"));
     }
 
     [Benchmark(Description = "Return unsuccessful result - LightResults")]
-    public LightResults.Result CreateError_LightResults()
+    public void CreateError_LightResults()
     {
-        return new LightResults.Error("Operation failed");
+        consumer.Consume(new LightResults.Error("Operation failed"));
     }
 
     [Benchmark(Description = "Return unsuccessful result (throw) - Exception")]
-    public Exception Throw_Exception()
+    public void Throw_Exception()
     {
         try
         {
@@ -94,44 +100,45 @@ public class ComparisonBenchmarks
         }
         catch (Exception ex)
         {
-            return ex;
+            consumer.Consume(ex);
         }
     }
 
 
     [Benchmark(Description = "Return successful result - Ardalis")]
-    public Ardalis.Result.Result<int> CreateSuccess_Ardalis()
+    public void CreateSuccess_Ardalis()
     {
-        return Ardalis.Result.Result<int>.Success(9999);
+        consumer.Consume(Ardalis.Result.Result<int>.Success(9999));
     }
 
     [Benchmark(Description = "Return successful result - Errgo")]
-    public (int?, Error) CreateSuccess_Errgo()
+    public void CreateSuccess_Errgo()
     {
-        return (9999, Error.None);
+        (int?, Error) result = (9999, Error.None);
+        consumer.Consume(result);
     }
 
     [Benchmark(Description = "Return successful result - LightResults")]
-    public LightResults.Result<int> CreateSuccess_LightResults()
+    public void CreateSuccess_LightResults()
     {
-        return LightResults.Result.Success(9999);
+        consumer.Consume(LightResults.Result.Success(9999));
     }
 
     [Benchmark(Description = "Return successful result - ErrorOr")]
-    public ErrorOr<int> CreateSuccess_ErrorOr()
+    public void CreateSuccess_ErrorOr()
     {
-        return 9999;
+        consumer.Consume((ErrorOr<int>)9999);
     }
 
     [Benchmark(Description = "Return successful result - FluentResults")]
-    public FluentResults.Result<int> CreateSuccess_FluentResults()
+    public void CreateSuccess_FluentResults()
     {
-        return FluentResults.Result.Ok(9999);
+        consumer.Consume(FluentResults.Result.Ok(9999));
     }
 
 
     [Benchmark(Description = "Multiple chained unsuccessful results - Errgo")]
-    public Error ErrorChaining_Errgo()
+    public void ErrorChaining_Errgo()
     {
         var firstError = new Errgo.Error("First error");
         var secondError = new Errgo.Error("Second error", firstError);
@@ -139,83 +146,143 @@ public class ComparisonBenchmarks
 
         var rootError = new Error("Root error");
         rootError = Error.Join(rootError, thirdError);
-        return rootError;
+        consumer.Consume(rootError);
     }
 
     [Benchmark(Description = "Multiple chained unsuccessful results - FluentResults")]
-    public FluentResults.Result ErrorChaining_FluentResults()
+    public void ErrorChaining_FluentResults()
     {
         var firstError = new FluentResults.Error("First error");
         var secondError = new FluentResults.Error("Second error").CausedBy(firstError);
         var thirdError = new FluentResults.Error("Final error").CausedBy(secondError);
 
         var rootError = new FluentResults.Error("Root error").CausedBy(thirdError);
-        return rootError;
+        consumer.Consume(rootError);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_1() => DeepCallStack_Errgo_2();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_2() => DeepCallStack_Errgo_3();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_3() => DeepCallStack_Errgo_4();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_4() => DeepCallStack_Errgo_5();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_5() => DeepCallStack_Errgo_6();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_6() => DeepCallStack_Errgo_7();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_7() => DeepCallStack_Errgo_8();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_8() => DeepCallStack_Errgo_9();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_9() => DeepCallStack_Errgo_10();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Error DeepCallStack_Errgo_10() => new Error("Operation failed");
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_1() => DeepCallStack_Exception_2();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_2() => DeepCallStack_Exception_3();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_3() => DeepCallStack_Exception_4();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_4() => DeepCallStack_Exception_5();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_5() => DeepCallStack_Exception_6();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_6() => DeepCallStack_Exception_7();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_7() => DeepCallStack_Exception_8();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_8() => DeepCallStack_Exception_9();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_9() => DeepCallStack_Exception_10();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void DeepCallStack_Exception_10() => throw new InvalidOperationException("Operation failed");
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_1() => DeepCallStack_FluentResults_2();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_2() => DeepCallStack_FluentResults_3();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_3() => DeepCallStack_FluentResults_4();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_4() => DeepCallStack_FluentResults_5();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_5() => DeepCallStack_FluentResults_6();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_6() => DeepCallStack_FluentResults_7();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_7() => DeepCallStack_FluentResults_8();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_8() => DeepCallStack_FluentResults_9();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_9() => DeepCallStack_FluentResults_10();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private FluentResults.Result DeepCallStack_FluentResults_10() => FluentResults.Result.Fail("Operation failed");
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_1() => DeepCallStack_ErrorOr_2();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_2() => DeepCallStack_ErrorOr_3();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_3() => DeepCallStack_ErrorOr_4();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_4() => DeepCallStack_ErrorOr_5();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_5() => DeepCallStack_ErrorOr_6();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_6() => DeepCallStack_ErrorOr_7();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_7() => DeepCallStack_ErrorOr_8();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_8() => DeepCallStack_ErrorOr_9();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_9() => DeepCallStack_ErrorOr_10();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private ErrorOr<int> DeepCallStack_ErrorOr_10() => ErrorOr.Error.Failure(description: "Operation failed");
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_1() => DeepCallStack_Ardalis_2();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_2() => DeepCallStack_Ardalis_3();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_3() => DeepCallStack_Ardalis_4();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_4() => DeepCallStack_Ardalis_5();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_5() => DeepCallStack_Ardalis_6();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_6() => DeepCallStack_Ardalis_7();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_7() => DeepCallStack_Ardalis_8();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_8() => DeepCallStack_Ardalis_9();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_9() => DeepCallStack_Ardalis_10();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private Ardalis.Result.Result<int> DeepCallStack_Ardalis_10() => Ardalis.Result.Result<int>.Error("Operation failed");
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_1() => DeepCallStack_LightResults_2();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_2() => DeepCallStack_LightResults_3();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_3() => DeepCallStack_LightResults_4();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_4() => DeepCallStack_LightResults_5();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_5() => DeepCallStack_LightResults_6();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_6() => DeepCallStack_LightResults_7();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_7() => DeepCallStack_LightResults_8();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_8() => DeepCallStack_LightResults_9();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_9() => DeepCallStack_LightResults_10();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private LightResults.Result DeepCallStack_LightResults_10() => new LightResults.Error("Operation failed");
 }

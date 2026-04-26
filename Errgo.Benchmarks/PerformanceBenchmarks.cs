@@ -40,7 +40,7 @@ public class PerformanceBenchmarks
         return new Error("Outer error", inner);
     }
 
-    [Benchmark(Description = "Propagate through 10 method calls")]
+    [Benchmark(Description = "Propagate error through 10 method calls")]
     public Error PropagateThroughDeepCallStack()
     {
         return DeepCallStack_1();
