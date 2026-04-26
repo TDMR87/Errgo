@@ -47,9 +47,7 @@ public readonly record struct Error
         [CallerLineNumber] int? lineNumber = null)
     {
         this.isError = true;
-        this.message = message is null || (message.Length > 0 && string.IsNullOrWhiteSpace(message))
-            ? Constants.DefaultErrorMessage
-            : message;
+        this.message = NormalizeMessage(message);
         this.sourceMemberName = memberName;
         this.sourceFilePath = filePath;
         this.sourceLineNumber = lineNumber;
@@ -78,9 +76,7 @@ public readonly record struct Error
         [CallerLineNumber] int? lineNumber = null)
     {
         this.isError = true;
-        this.message = message is null || (message.Length > 0 && string.IsNullOrWhiteSpace(message))
-            ? Constants.DefaultErrorMessage
-            : message;
+        this.message = NormalizeMessage(message);
         this.sourceMemberName = memberName;
         this.sourceFilePath = filePath;
         this.sourceLineNumber = lineNumber;
@@ -474,6 +470,26 @@ public readonly record struct Error
     {
         if (!this.isError) return 0;
         return this.message?.GetHashCode() ?? 0;
+    }
+
+    private static string NormalizeMessage(string? message)
+    {
+        if (message is null)
+        {
+            return Constants.DefaultErrorMessage;
+        }
+
+        if (message.Length == 0)
+        {
+            return message;
+        }
+
+        if (!char.IsWhiteSpace(message[0]))
+        {
+            return message;
+        }
+
+        return string.IsNullOrWhiteSpace(message) ? Constants.DefaultErrorMessage : message;
     }
 
     private static class Constants
