@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Errgo;
 
@@ -18,14 +17,15 @@ public readonly record struct Error
     /// <remarks>
     /// NOTE: Source location information (member name, file path, and line number) is not captured.
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Error()
     {
-        this.isError = true;
-        this.message = Constants.DefaultErrorMessage;
+        this.isError          = true;
+        this.message          = Constants.DefaultErrorMessage;
         this.sourceMemberName = null;
-        this.sourceFilePath = null;
+        this.sourceFilePath   = null;
         this.sourceLineNumber = null;
-        this.innerErrors = null;
+        this.innerErrors      = null;
     }
 
     /// <summary>
@@ -40,18 +40,19 @@ public readonly record struct Error
     /// captured by the compiler using caller information attributes and should not be manually provided 
     /// in typical usage.
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Error(
         string? message = Constants.DefaultErrorMessage,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.isError = true;
-        this.message = NormalizeMessage(message);
+        this.isError          = true;
+        this.message          = NormalizeMessage(message);
         this.sourceMemberName = memberName;
-        this.sourceFilePath = filePath;
+        this.sourceFilePath   = filePath;
         this.sourceLineNumber = lineNumber;
-        this.innerErrors = null;
+        this.innerErrors      = null;
     }
 
     /// <summary>
@@ -68,26 +69,21 @@ public readonly record struct Error
     /// captured by the compiler using caller information attributes and should not be manually provided 
     /// in typical usage.
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Error(
         string message,
-        Error error,
+        in Error error,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.isError = true;
-        this.message = NormalizeMessage(message);
+        this.isError          = true;
+        this.message          = NormalizeMessage(message);
         this.sourceMemberName = memberName;
-        this.sourceFilePath = filePath;
+        this.sourceFilePath   = filePath;
         this.sourceLineNumber = lineNumber;
 
-        if (!error.isError)
-        {
-            this.innerErrors = null;
-            return;
-        }
-
-        this.innerErrors = [error];
+        if (error.isError) this.innerErrors = [error];
     }
 
     /// <summary>
@@ -97,16 +93,18 @@ public readonly record struct Error
     /// Constructing an Error.None with this is faster than using => default;
     /// </summary>
     /// <param name="isError"></param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Error(bool isError)
     {
-        this.isError = isError;
-        this.message = null;
+        this.isError          = isError;
+        this.message          = null;
         this.sourceMemberName = null;
-        this.sourceFilePath = null;
+        this.sourceFilePath   = null;
         this.sourceLineNumber = null;
-        this.innerErrors = null;
+        this.innerErrors      = null;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Error(
         bool isError,
         string? message,
@@ -115,12 +113,12 @@ public readonly record struct Error
         int? sourceLineNumber,
         Error[]? innerErrors)
     {
-        this.isError = isError;
-        this.message = message;
+        this.isError          = isError;
+        this.message          = message;
         this.sourceMemberName = sourceMemberName;
-        this.sourceFilePath = sourceFilePath;
+        this.sourceFilePath   = sourceFilePath;
         this.sourceLineNumber = sourceLineNumber;
-        this.innerErrors = innerErrors;
+        this.innerErrors      = innerErrors;
     }
 
     /// <summary>
@@ -203,10 +201,10 @@ public readonly record struct Error
         {
             // Root error's inner errors are placed first
             Array.Copy(
-                sourceArray: rootError.innerErrors, 
-                sourceIndex: 0, 
-                destinationArray: mergedErrors, 
-                destinationIndex: 0, 
+                sourceArray: rootError.innerErrors,
+                sourceIndex: 0,
+                destinationArray: mergedErrors,
+                destinationIndex: 0,
                 length: firstErrInnerCount);
 
             destinationIndex = firstErrInnerCount;
@@ -326,10 +324,14 @@ public readonly record struct Error
             : string.Empty;
 
         if (!string.IsNullOrWhiteSpace(fileName) && this.sourceLineNumber > 0)
+        {
             return $"{this.message} at {this.sourceMemberName} in {fileName} (line {this.sourceLineNumber})";
+        }
 
         if (!string.IsNullOrWhiteSpace(fileName))
+        {
             return $"{this.message} at {this.sourceMemberName} in {fileName}";
+        }
 
         return $"{this.message} at {this.sourceMemberName}";
     }

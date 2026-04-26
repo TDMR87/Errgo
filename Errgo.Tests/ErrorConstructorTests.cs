@@ -93,4 +93,11 @@ public class ErrorConstructorTests
         Assert.Equal(Error.None, errors[2]);
         Assert.DoesNotContain(Error.Empty, errors);
     }
+
+    [Fact]
+    public void Error_Default()
+    {
+        var error = default(Error);
+        Assert.True(error);
+    }
 }

@@ -1,10 +1,12 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Order;
+using System.Runtime.CompilerServices;
 using ErrorOr;
 using FluentResults;
 using Ardalis.Result;
-using System.Runtime.CompilerServices;
+using LightResults;
+using Errgo;
 
 namespace Errgo.Benchmarks;
 
@@ -59,39 +61,41 @@ public class ComparisonBenchmarks
         consumer.Consume(DeepCallStack_FluentResults_1());
     }
 
-    [Benchmark(Description = "Return unsuccessful result - Ardalis")]
+    [Benchmark(Description = "Create unsuccessful result - Ardalis")]
     public void CreateError_Ardalis()
     {
         consumer.Consume(Ardalis.Result.Result<int>.Error("Operation failed"));
     }
 
-    [Benchmark(Description = "Return unsuccessful result - Errgo")]
+    [Benchmark(Description = "Create unsuccessful result - Errgo")]
     public void CreateError_Errgo()
     {
-        (int?, Error) result = (null, new Error("Operation failed"));
+        Error result = new Errgo.Error("Operation failed");
         consumer.Consume(result);
     }
 
-    [Benchmark(Description = "Return unsuccessful result - ErrorOr")]
+    [Benchmark(Description = "Create unsuccessful result - ErrorOr")]
     public void CreateError_ErrorOr()
     {
-        ErrorOr<int> result = ErrorOr.Error.Failure(description: "Operation failed");
+        var result = ErrorOr.Error.Failure(description: "Operation failed");
         consumer.Consume(result);
     }
 
-    [Benchmark(Description = "Return unsuccessful result - FluentResults")]
+    [Benchmark(Description = "Create unsuccessful result - FluentResults")]
     public void CreateError_FluentResults()
     {
-        consumer.Consume(FluentResults.Result.Fail("Operation failed"));
+        var result = FluentResults.Result.Fail("Operation failed");
+        consumer.Consume(result);
     }
 
-    [Benchmark(Description = "Return unsuccessful result - LightResults")]
+    [Benchmark(Description = "Create unsuccessful result - LightResults")]
     public void CreateError_LightResults()
     {
-        consumer.Consume(new LightResults.Error("Operation failed"));
+        var result = new LightResults.Error("Operation failed");
+        consumer.Consume(result);
     }
 
-    [Benchmark(Description = "Return unsuccessful result (throw) - Exception")]
+    [Benchmark(Description = "Create unsuccessful result (throw) - Exception")]
     public void Throw_Exception()
     {
         try
@@ -104,36 +108,39 @@ public class ComparisonBenchmarks
         }
     }
 
-
-    [Benchmark(Description = "Return successful result - Ardalis")]
+    [Benchmark(Description = "Create successful result - Ardalis")]
     public void CreateSuccess_Ardalis()
     {
-        consumer.Consume(Ardalis.Result.Result<int>.Success(9999));
-    }
-
-    [Benchmark(Description = "Return successful result - Errgo")]
-    public void CreateSuccess_Errgo()
-    {
-        (int?, Error) result = (9999, Error.None);
+        var result = Ardalis.Result.Result<int>.Success(9999);
         consumer.Consume(result);
     }
 
-    [Benchmark(Description = "Return successful result - LightResults")]
+    [Benchmark(Description = "Create successful result - Errgo")]
+    public void CreateSuccess_Errgo()
+    {
+        (int, Error) result = (9999, Error.None);
+        consumer.Consume(result);
+    }
+
+    [Benchmark(Description = "Create successful result - LightResults")]
     public void CreateSuccess_LightResults()
     {
-        consumer.Consume(LightResults.Result.Success(9999));
+        var result = LightResults.Result.Success(9999);
+        consumer.Consume(result);
     }
 
-    [Benchmark(Description = "Return successful result - ErrorOr")]
+    [Benchmark(Description = "Create successful result - ErrorOr")]
     public void CreateSuccess_ErrorOr()
     {
-        consumer.Consume((ErrorOr<int>)9999);
+        var result = (ErrorOr<int>)9999;
+        consumer.Consume(result);
     }
 
-    [Benchmark(Description = "Return successful result - FluentResults")]
+    [Benchmark(Description = "Create successful result - FluentResults")]
     public void CreateSuccess_FluentResults()
     {
-        consumer.Consume(FluentResults.Result.Ok(9999));
+        var result = FluentResults.Result.Ok(9999);
+        consumer.Consume(result);
     }
 
 
