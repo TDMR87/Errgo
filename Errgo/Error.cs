@@ -380,9 +380,10 @@ public readonly record struct Error
     /// <returns>A read-only list of all inner errors in the chain.</returns>
     private IReadOnlyList<Error> FlattenInnerErrors()
     {
+        if (!this.IsError) return [];
+        if (this.innerErrors is null) return [];
+
         List<Error> flatList = [];
-        if (!this.IsError) return flatList;
-        if (this.innerErrors is null) return flatList;
         CollectErrorsRecursively(this.innerErrors, flatList);
         return flatList;
     }
