@@ -478,13 +478,10 @@ public readonly record struct Error
     /// <returns>true if both errors have the same error state and, if present, identical message text; otherwise, false.</returns>
     public bool Equals(Error other)
     {
-        if (this.isConstructed != other.isConstructed) return false;
         if (!this.IsError && !other.IsError) return true;
         if (!this.IsError || !other.IsError) return false;
-        if (message is null && other.message is null) return true;
-        if (message is null || other.message is null) return false;
 
-        return message.Equals(other.message, StringComparison.Ordinal);
+        return this.Message.Equals(other.Message, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -497,9 +494,8 @@ public readonly record struct Error
     /// </returns>
     public override int GetHashCode()
     {
-        if (!this.isConstructed) return -1;
         if (!this.IsError) return 0;
-        return this.message?.GetHashCode() ?? 0;
+        return StringComparer.Ordinal.GetHashCode(this.Message);
     }
 
     private static string NormalizeMessage(string? message)

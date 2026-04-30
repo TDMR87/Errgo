@@ -83,4 +83,25 @@ public class ErrorEqualityTests
         
         Assert.False(err.Equals(null));
     }
+
+    [Fact]
+    public void Error_Equals_DefaultError_And_DefaultConstructorError_WithSameVisibleMessage_ShouldMatch()
+    {
+        var defaultError = default(Error);
+        var constructedError = new Error();
+
+        Assert.Equal(defaultError.Message, constructedError.Message);
+        Assert.True(defaultError.Equals(constructedError));
+        Assert.True(defaultError == constructedError);
+    }
+
+    [Fact]
+    public void Error_GetHashCode_DefaultError_And_DefaultConstructorError_WithSameVisibleMessage_ShouldMatch()
+    {
+        var defaultError = default(Error);
+        var constructedError = new Error();
+
+        Assert.Equal(defaultError.Message, constructedError.Message);
+        Assert.Equal(defaultError.GetHashCode(), constructedError.GetHashCode());
+    }
 }
