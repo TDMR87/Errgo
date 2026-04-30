@@ -38,6 +38,17 @@ public class ErrorAsTests
     }
 
     [Fact]
+    public void Error_As_DefaultError_And_DefaultConstructorError_WithSameVisibleMessage_ShouldMatch()
+    {
+        var defaultError = default(Error);
+        var constructedError = new Error();
+
+        Assert.Equal(defaultError.Message, constructedError.Message);
+        Assert.True(defaultError.As(constructedError, out var match));
+        Assert.Equal(defaultError, match);
+    }
+
+    [Fact]
     public void Error_As_ReturnsErrorWithSourceLocation()
     {
         var (_, err) = GetDatabaseError();

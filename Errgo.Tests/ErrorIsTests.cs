@@ -22,6 +22,16 @@ public class ErrorIsTests
     }
 
     [Fact]
+    public void Error_Is_DefaultError_And_DefaultConstructorError_WithSameVisibleMessage_ShouldMatch()
+    {
+        var defaultError = default(Error);
+        var constructedError = new Error();
+
+        Assert.Equal(defaultError.Message, constructedError.Message);
+        Assert.True(defaultError.Is(constructedError));
+    }
+
+    [Fact]
     public void Error_Is_ReturnsTrueWhenErrorInChain()
     {
         var inner = NotFound;

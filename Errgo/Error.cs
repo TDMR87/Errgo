@@ -421,7 +421,7 @@ public readonly record struct Error
         if (!this.IsError || !target.IsError) return false;
         if (!this.isConstructed && !target.isConstructed) return true;
 
-        if (this.message is not null && this.message.Equals(target.message, StringComparison.Ordinal))
+        if (this.Message.Equals(target.Message, StringComparison.Ordinal))
             return true;
 
         foreach (var innerError in innerErrors ?? [])
@@ -454,7 +454,7 @@ public readonly record struct Error
             return true;
         }
 
-        if (this.message is not null && this.message.Equals(target.message, StringComparison.Ordinal))
+        if (this.Message.Equals(target.Message, StringComparison.Ordinal))
         {
             match = this;
             return true;
