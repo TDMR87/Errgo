@@ -13,6 +13,15 @@ public class ErrorIsTests
     }
 
     [Fact]
+    public void Error_Is_DefaultError_ShouldStillMatchDefaultError()
+    {
+        var err = new Error("error");
+        var joined = Error.Join(err, default(Error), new Error("next error"));
+
+        Assert.True(joined.Is(default(Error)));
+    }
+
+    [Fact]
     public void Error_Is_ReturnsTrueWhenErrorInChain()
     {
         var inner = NotFound;

@@ -51,4 +51,13 @@ public class ErrorMessageTests
 
         Assert.NotEqual(errEmpty, errNull);
     }
+
+    [Fact]
+    public void Error_DefaultTruthyValue_ShouldExposeVisibleMessage()
+    {
+        var error = default(Error);
+
+        Assert.True(error);
+        Assert.False(string.IsNullOrWhiteSpace(error.Message));
+    }
 }

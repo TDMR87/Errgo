@@ -62,10 +62,6 @@ public class Examples
             : (true, Error.None);
     }
 
-    /// <summary>
-    /// Demonstrates the "Try" pattern similar to int.TryParse.
-    /// Returns bool for success/failure and outputs the result and error.
-    /// </summary>
     public static void TryPatternExample()
     {
         if (!TryParseData("invalid", out var data, out var err))
@@ -88,10 +84,6 @@ public class Examples
         return true;
     }
 
-    /// <summary>
-    /// Demonstrates the early return pattern for error handling.
-    /// This is the most common pattern - check error and return immediately.
-    /// </summary>
     public static void EarlyReturnPatternExample()
     {
         var (result, err) = ProcessWithEarlyReturn();

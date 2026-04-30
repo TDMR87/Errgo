@@ -3,6 +3,15 @@ namespace Errgo.Tests;
 public class ErrorStackTests
 {
     [Fact]
+    public void Error_DefaultTruthyValue_ShouldExposeVisibleStack()
+    {
+        var error = default(Error);
+
+        Assert.True(error);
+        Assert.False(string.IsNullOrWhiteSpace(error.Stack));
+    }
+
+    [Fact]
     public void Error_Stack_NullMessage()
     {
         var inner = new Error(message: null);

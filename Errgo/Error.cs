@@ -4,8 +4,6 @@ namespace Errgo;
 
 public readonly record struct Error
 {
-    
-
     private readonly string?  message;
     private readonly string?  sourceMemberName;
     private readonly string?  sourceFilePath;
@@ -13,8 +11,8 @@ public readonly record struct Error
     private readonly Error[]? innerErrors;
 
     /// <summary>
-    /// THe two flags distinguish runtime-default values from explicitly constructed values.
-    /// default(Error) (isConstructed=false and isExplicitError=false) is still treated as an error.
+    /// These two flags distinguish runtime-default values from explicitly constructed values.
+    /// e.g. default(Error) results in isConstructed=false and isExplicitError=false and is still treated as an error.
     /// Error.None (isConstructed=true and isExplicitError=false) is treated as a non-error.
     /// </summary>
     private readonly bool isConstructed;
@@ -30,7 +28,7 @@ public readonly record struct Error
     public Error()
     {
         this.isConstructed    = true;
-        this.isExplicitError = true;
+        this.isExplicitError  = true;
         this.sourceMemberName = null;
         this.sourceFilePath   = null;
         this.sourceLineNumber = null;
@@ -228,7 +226,7 @@ public readonly record struct Error
             destinationIndex = firstErrInnerCount;
         }
 
-        // Skipping the root error, append the additional errors
+        // Skip the root error and append the additional errors
         for (int i = 1; i < validErrors.Count; i++)
         {
             mergedErrors[destinationIndex++] = validErrors[i];
@@ -272,7 +270,14 @@ public readonly record struct Error
     /// <summary>
     /// Gets the message associated with this error, without source location information.
     /// </summary>
-    public string Message => message ?? string.Empty;
+    public string Message
+    {
+        get
+        {
+            if (!this.IsError) return string.Empty;
+            return message ?? Constants.DefaultErrorMessage;
+        }
+    }
 
     /// <summary>
     /// Gets the message associated with this error with source location information.
@@ -335,7 +340,7 @@ public readonly record struct Error
         if (!this.IsError) return string.Empty;
 
         var hasMemberName = !string.IsNullOrWhiteSpace(this.sourceMemberName);
-        if (!hasMemberName) return this.message ?? string.Empty;
+        if (!hasMemberName) return this.Message;
 
         var fileName = !string.IsNullOrWhiteSpace(this.sourceFilePath) 
             ? Path.GetFileName(this.sourceFilePath) 
@@ -343,15 +348,15 @@ public readonly record struct Error
 
         if (!string.IsNullOrWhiteSpace(fileName) && this.sourceLineNumber > 0)
         {
-            return $"{this.message} at {this.sourceMemberName} in {fileName} (line {this.sourceLineNumber})";
+            return $"{this.Message} at {this.sourceMemberName} in {fileName} (line {this.sourceLineNumber})";
         }
 
         if (!string.IsNullOrWhiteSpace(fileName))
         {
-            return $"{this.message} at {this.sourceMemberName} in {fileName}";
+            return $"{this.Message} at {this.sourceMemberName} in {fileName}";
         }
 
-        return $"{this.message} at {this.sourceMemberName}";
+        return $"{this.Message} at {this.sourceMemberName}";
     }
 
     /// <summary>
