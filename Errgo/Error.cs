@@ -306,27 +306,25 @@ public readonly record struct Error
     {
         get
         {
-            var lines = new List<string>();
+            if (!this.IsError) return string.Empty;
 
+            var current = this.ToString();
+            if (innerErrors is null)
             {
-                if (this.ToString() is string errStr && !string.IsNullOrWhiteSpace(errStr))
-                {
-                    lines.Add(errStr);
-                }
+                return string.IsNullOrWhiteSpace(current) ? string.Empty : current;
             }
 
-            if (innerErrors is not null)
+            var builder = new System.Text.StringBuilder();
+            var hasLine = false;
+
+            if (!string.IsNullOrWhiteSpace(current))
             {
-                foreach (var error in FlattenInnerErrors())
-                {
-                    if (error.ToString() is string errStr && !string.IsNullOrWhiteSpace(errStr))
-                    {
-                        lines.Add(errStr);
-                    }
-                }
+                builder.Append(current);
+                hasLine = true;
             }
 
-            return string.Join(Environment.NewLine, lines);
+            AppendStackLines(innerErrors, builder, ref hasLine);
+            return builder.ToString();
         }
     }
 
@@ -339,8 +337,10 @@ public readonly record struct Error
     {
         if (!this.IsError) return string.Empty;
 
+        var message = this.Message;
+
         var hasMemberName = !string.IsNullOrWhiteSpace(this.sourceMemberName);
-        if (!hasMemberName) return this.Message;
+        if (!hasMemberName) return message;
 
         var fileName = !string.IsNullOrWhiteSpace(this.sourceFilePath) 
             ? Path.GetFileName(this.sourceFilePath) 
@@ -348,15 +348,15 @@ public readonly record struct Error
 
         if (!string.IsNullOrWhiteSpace(fileName) && this.sourceLineNumber > 0)
         {
-            return $"{this.Message} at {this.sourceMemberName} in {fileName} (line {this.sourceLineNumber})";
+            return $"{message} at {this.sourceMemberName} in {fileName} (line {this.sourceLineNumber})";
         }
 
         if (!string.IsNullOrWhiteSpace(fileName))
         {
-            return $"{this.Message} at {this.sourceMemberName} in {fileName}";
+            return $"{message} at {this.sourceMemberName} in {fileName}";
         }
 
-        return $"{this.Message} at {this.sourceMemberName}";
+        return $"{message} at {this.sourceMemberName}";
     }
 
     /// <summary>
@@ -403,6 +403,29 @@ public readonly record struct Error
             if (error.innerErrors is not null)
             {
                 CollectErrorsRecursively(error.innerErrors, collection);
+            }
+        }
+    }
+
+    private static void AppendStackLines(Error[] errors, System.Text.StringBuilder builder, ref bool hasLine)
+    {
+        foreach (var error in errors)
+        {
+            var text = error.ToString();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                if (hasLine)
+                {
+                    builder.AppendLine();
+                }
+
+                builder.Append(text);
+                hasLine = true;
+            }
+
+            if (error.innerErrors is not null)
+            {
+                AppendStackLines(error.innerErrors, builder, ref hasLine);
             }
         }
     }
