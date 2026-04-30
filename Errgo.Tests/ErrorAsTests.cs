@@ -56,7 +56,7 @@ public class ErrorAsTests
         Assert.True(err.As(TimeoutError, out var match));
         Assert.Equal(TimeoutError, match);
         Assert.Equal("GetDatabaseError", err.SourceMemberName);
-        Assert.Contains("ErrorAsTests.cs", err.SourceFilepath);
+        Assert.Contains("ErrorAsTests.cs", err.SourceFilePath);
         Assert.True(err.SourceLineNumber > 0);
     }
 

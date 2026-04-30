@@ -19,7 +19,7 @@ public class ErrorSentinelTests
 
         Assert.Null(err.SourceMemberName);
         Assert.Null(err.SourceLineNumber);
-        Assert.Null(err.SourceFilepath);
+        Assert.Null(err.SourceFilePath);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class ErrorSentinelTests
 
         Assert.Equal("Error getting item with id 123", err.Message);
         Assert.Equal(Errors.NotFound, err.InnerErrors[0]);
-        Assert.NotNull(err.SourceFilepath);
+        Assert.NotNull(err.SourceFilePath);
         Assert.NotEqual(0, err.SourceLineNumber);
         Assert.Equal(nameof(Error_SentinelError_HasSourceLocationInformation_WhenWrappedInError), err.SourceMemberName);
     }

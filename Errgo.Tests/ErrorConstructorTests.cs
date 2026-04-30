@@ -20,7 +20,7 @@ public class ErrorConstructorTests
     {
         var err = new Error();
         Assert.Null(err.SourceMemberName);
-        Assert.Null(err.SourceFilepath);
+        Assert.Null(err.SourceFilePath);
         Assert.Null(err.SourceLineNumber);
     }
 
@@ -31,8 +31,8 @@ public class ErrorConstructorTests
         Assert.Equal("Unknown error", err.Message);
         Assert.NotNull(err.SourceMemberName);
         Assert.NotEmpty(err.SourceMemberName);
-        Assert.NotNull(err.SourceFilepath);
-        Assert.NotEmpty(err.SourceFilepath);
+        Assert.NotNull(err.SourceFilePath);
+        Assert.NotEmpty(err.SourceFilePath);
         Assert.NotNull(err.SourceLineNumber);
         Assert.NotEqual(0, err.SourceLineNumber);
     }
@@ -60,10 +60,10 @@ public class ErrorConstructorTests
 
         // Neither of them capture source location
         Assert.Null(defaultError.SourceMemberName);
-        Assert.Null(defaultError.SourceFilepath);
+        Assert.Null(defaultError.SourceFilePath);
         Assert.Null(defaultError.SourceLineNumber);
         Assert.Null(emptyError.SourceMemberName);
-        Assert.Null(emptyError.SourceFilepath);
+        Assert.Null(emptyError.SourceFilePath);
         Assert.Null(emptyError.SourceLineNumber);
     }
 

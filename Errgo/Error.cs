@@ -292,7 +292,7 @@ public readonly record struct Error
     /// <summary>
     /// Gets the source file's path where this error occurred.
     /// </summary>
-    public string? SourceFilepath => sourceFilePath;
+    public string? SourceFilePath => sourceFilePath;
 
     /// <summary>
     /// Gets the line number where this error occurred.

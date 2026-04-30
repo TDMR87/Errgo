@@ -13,7 +13,7 @@ public class ErrorSourceLocationInfoTests
         // Error properties contain the full details
         Assert.Equal("Database connection failed", err.Message);
         Assert.Equal("GetDatabaseError", err.SourceMemberName);
-        Assert.Contains(nameof(ErrorSourceLocationInfoTests), err.SourceFilepath);
+        Assert.Contains(nameof(ErrorSourceLocationInfoTests), err.SourceFilePath);
         Assert.True(err.SourceLineNumber > 0);
         
         // Stack includes location info
@@ -30,7 +30,7 @@ public class ErrorSourceLocationInfoTests
         // Even without a message, source location should be visible
         Assert.Equal("Unknown error", err.Message);
         Assert.Equal("GetErrorWithoutMessage", err.SourceMemberName);
-        Assert.Contains(nameof(ErrorSourceLocationInfoTests), err.SourceFilepath);
+        Assert.Contains(nameof(ErrorSourceLocationInfoTests), err.SourceFilePath);
         Assert.True(err.SourceLineNumber > 0);
         
         var stack = err.Stack;
