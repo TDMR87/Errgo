@@ -145,8 +145,8 @@ public readonly record struct Error
     private bool IsError => !isConstructed || isExplicitError;
 
     /// <summary>
-    /// Returns an non-Error with zeroed values. 
-    /// Use this for returning an Error type when no error occurred.
+    /// Returns the canonical non-error sentinel value.
+    /// Use this for returning an <see cref="Error"/> when no error occurred.
     /// </summary>
     public static Error None
     {
@@ -485,12 +485,12 @@ public readonly record struct Error
     }
 
     /// <summary>
-    /// Returns a hash code for the current object based on its message.
-    /// If the error represents no error (Error.None), returns 0.
+    /// Returns a hash code for the current object based on its effective message.
+    /// If the error represents no error (<see cref="Error.None"/>), returns 0.
     /// </summary>
     /// <returns>An integer hash code representing the object's state. 
-    /// Returns 0 if this is Error.None; otherwise, returns the
-    /// hash code of the message text, or 0 if the message text is null.
+    /// Returns 0 if this is <see cref="Error.None"/>; otherwise, returns the
+    /// hash code of the effective message text exposed by <see cref="Message"/>.
     /// </returns>
     public override int GetHashCode()
     {
