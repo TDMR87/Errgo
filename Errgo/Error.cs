@@ -257,14 +257,106 @@ public readonly record struct Error
     /// </returns>
     public static Error Join(Error root, Error?[]? errors)
     {
-        var noErrors = errors is null || errors.Length == 0 || !errors.Any(e => e?.IsError == true);
-        if (!root.IsError && noErrors) return None;
-        if (root.IsError && noErrors) return root;
+        if (errors is null || errors.Length == 0)
+            return root.IsError ? root : None;
 
-        var combinedErrors = new Error?[errors!.Length + 1];
-        combinedErrors[0] = root;
-        Array.Copy(errors, 0, combinedErrors, 1, errors.Length);
-        return Join(combinedErrors);
+        if (root.IsError)
+        {
+            var additionalErrorCount = 0;
+            for (int i = 0; i < errors.Length; i++)
+            {
+                if (errors[i] is Error error && error.IsError) 
+                    additionalErrorCount++;
+            }
+
+            if (additionalErrorCount == 0) return root;
+
+            var existingInnerCount = root.innerErrors?.Length ?? 0;
+            var mergedErrors = new Error[existingInnerCount + additionalErrorCount];
+
+            var destinationIndex = 0;
+            if (existingInnerCount > 0)
+            {
+                Array.Copy(
+                    sourceArray: root.innerErrors,
+                    sourceIndex: 0,
+                    destinationArray: mergedErrors,
+                    destinationIndex: 0,
+                    length: existingInnerCount);
+
+                destinationIndex = existingInnerCount;
+            }
+
+            for (int i = 0; i < errors.Length; i++)
+            {
+                if (errors[i] is Error error && error.IsError)
+                    mergedErrors[destinationIndex++] = error;
+            }
+
+            return new Error(
+                isError: true,
+                message: root.message,
+                sourceMemberName: root.sourceMemberName,
+                sourceFilePath: root.sourceFilePath,
+                sourceLineNumber: root.sourceLineNumber,
+                innerErrors: mergedErrors);
+        }
+
+        Error rootError = None;
+        var firstValidIndex = -1;
+
+        for (int i = 0; i < errors.Length; i++)
+        {
+            if (errors[i] is Error error && error.IsError)
+            {
+                rootError = error;
+                firstValidIndex = i;
+                break;
+            }
+        }
+
+        if (firstValidIndex < 0) return None;
+
+        var trailingErrorCount = 0;
+        for (int i = firstValidIndex + 1; i < errors.Length; i++)
+        {
+            if (errors[i] is Error error && error.IsError)
+                trailingErrorCount++;
+        }
+
+        if (trailingErrorCount == 0) return rootError;
+
+        var rootInnerCount = rootError.innerErrors?.Length ?? 0;
+        var mergedRootErrors = new Error[rootInnerCount + trailingErrorCount];
+
+        var mergedIndex = 0;
+        if (rootInnerCount > 0)
+        {
+            Array.Copy(
+                sourceArray: rootError.innerErrors,
+                sourceIndex: 0,
+                destinationArray: mergedRootErrors,
+                destinationIndex: 0,
+                length: rootInnerCount);
+
+            mergedIndex = rootInnerCount;
+        }
+
+        for (int i = firstValidIndex + 1; i < errors.Length; i++)
+        {
+            if (errors[i] is Error error && error.IsError)
+            {
+                mergedRootErrors[mergedIndex++] = error;
+            }
+        }
+
+        return new Error(
+            isError: true,
+            message: rootError.message,
+            sourceMemberName: rootError.sourceMemberName,
+            sourceFilePath: rootError.sourceFilePath,
+            sourceLineNumber: rootError.sourceLineNumber,
+            innerErrors: mergedRootErrors);
     }
 
     /// <summary>
