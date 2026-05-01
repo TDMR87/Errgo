@@ -257,13 +257,13 @@ public readonly record struct Error
     /// </returns>
     public static Error Join(Error root, Error?[]? errors)
     {
-        if (errors is null || errors.Length == 0) return root;
+        var noErrors = errors is null || errors.Length == 0 || !errors.Any(e => e?.IsError == true);
+        if (!root.IsError && noErrors) return None;
+        if (root.IsError && noErrors) return root;
 
-        // Prepend root to the error chain and delegate to the variadic Join logic
-        var combinedErrors = new Error?[errors.Length + 1];
+        var combinedErrors = new Error?[errors!.Length + 1];
         combinedErrors[0] = root;
         Array.Copy(errors, 0, combinedErrors, 1, errors.Length);
-
         return Join(combinedErrors);
     }
 

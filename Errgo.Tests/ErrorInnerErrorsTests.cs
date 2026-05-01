@@ -33,5 +33,22 @@ public class ErrorInnerErrorsTests
         Assert.Equal("Second", innerErrors[1].Message);
         Assert.Equal("Third", innerErrors[2].Message);
     }
+
+    [Fact]
+    public void Error_InnerErrors_OnlyShowsErrorsJoinedByThis()
+    {
+        var err1 = new Error("Error 1");
+        var err2 = new Error("Error 2", err1);
+        var err3 = new Error("Error 3", err2);
+
+        Assert.Empty(err1.InnerErrors);
+
+        Assert.Single(err2.InnerErrors);
+        Assert.Contains(err2.InnerErrors, e => e.Message == "Error 1");
+
+        Assert.Equal(2, err3.InnerErrors.Count);
+        Assert.Contains(err3.InnerErrors, e => e.Message == "Error 2");
+        Assert.Contains(err3.InnerErrors, e => e.Message == "Error 1");
+    }
 }
 

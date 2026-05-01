@@ -218,27 +218,5 @@ public class ErrorStackTests
         Assert.DoesNotContain("Outer", inner1Stack);
     }
 
-    [Fact]
-    public void Error_InnerErrors_OnlyShowsErrorsJoinedByThis()
-    {
-        // Arrange: Create a chain
-        var err1 = new Error("Error 1");
-        var err2 = new Error("Error 2", err1);
-        var err3 = new Error("Error 3", err2);
-
-        // Act & Assert: Each error's InnerErrors should only show what IT joined
-
-        // err1 has no inner errors
-        Assert.Empty(err1.InnerErrors);
-
-        // err2 has err1 as inner error
-        Assert.Single(err2.InnerErrors);
-        Assert.Contains(err2.InnerErrors, e => e.Message == "Error 1");
-
-        // err3 has err2 and err1 (flattened) as inner errors
-        Assert.Equal(2, err3.InnerErrors.Count);
-        Assert.Contains(err3.InnerErrors, e => e.Message == "Error 2");
-        Assert.Contains(err3.InnerErrors, e => e.Message == "Error 1");
-    }
 }
 

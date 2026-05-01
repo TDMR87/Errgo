@@ -1,6 +1,6 @@
-﻿namespace Errgo.Tests;
+namespace Errgo.Tests;
 
-public class ErrorMessageDetails
+public class ErrorMessageDetailsTests
 {
     [Fact]
     public void Error_DefaultTruthyValue_ShouldExposeVisibleMessageDetails()

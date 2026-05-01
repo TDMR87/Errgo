@@ -25,7 +25,7 @@ public class ErrorConstructorTests
     }
 
     [Fact]
-    public void Error_DefaultConstructor_WithNullMessageCaputersSourceLocation()
+    public void Error_DefaultConstructor_WithNullMessageCapturesSourceLocation()
     {
         Error err = new(message: null!);
         Assert.Equal("Unknown error", err.Message);
@@ -38,7 +38,7 @@ public class ErrorConstructorTests
     }
 
     [Fact]
-    public void Error_DefaultConstructor_WithEmptyMessageCaputersSourceLocation()
+    public void Error_DefaultConstructor_WithEmptyMessageCapturesSourceLocation()
     {
         Error err = new(string.Empty);
         Assert.NotNull(err.SourceMemberName);
