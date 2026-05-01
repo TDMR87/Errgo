@@ -345,10 +345,10 @@ public readonly record struct Error
 
         return (hasMemberName, hasFileName, hasLineNumber) switch
         {
-            (true, true, true) => $"{message} at {this.sourceMemberName} in {fileName}:line {this.sourceLineNumber}",
-            (true, true, false) => $"{message} at {this.sourceMemberName} in {fileName}",
-            (true, false, _) => $"{message} at {this.sourceMemberName}",
-            (false, true, true) => $"{message} in {fileName}:line {this.sourceLineNumber}",
+            (true, true, true)   => $"{message} at {this.sourceMemberName} in {fileName}:line {this.sourceLineNumber}",
+            (true, true, false)  => $"{message} at {this.sourceMemberName} in {fileName}",
+            (true, false, _)     => $"{message} at {this.sourceMemberName}",
+            (false, true, true)  => $"{message} in {fileName}:line {this.sourceLineNumber}",
             (false, true, false) => $"{message} in {fileName}",
             (false, false, true) => $"{message}:line {this.sourceLineNumber}",
             _ => message,
