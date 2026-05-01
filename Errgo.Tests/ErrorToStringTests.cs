@@ -21,7 +21,7 @@ public class ErrorToStringTests
     {
         var err = new Error("Failed", memberName: "DoWork", filePath: @"C:\\src\\Errgo\\Error.cs", lineNumber: 42);
 
-        Assert.Equal("Failed at DoWork in Error.cs (line 42)", err.ToString());
+        Assert.Equal("Failed at DoWork in Error.cs:line 42", err.ToString());
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class ErrorToStringTests
     {
         var err = new Error("Failed", memberName: null, filePath: null, lineNumber: 42);
 
-        Assert.Equal("Failed (line 42)", err.ToString());
+        Assert.Equal("Failed:line 42", err.ToString());
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class ErrorToStringTests
     {
         var err = new Error("Failed", memberName: "   ", filePath: " ", lineNumber: 42);
 
-        Assert.Equal("Failed (line 42)", err.ToString());
+        Assert.Equal("Failed:line 42", err.ToString());
     }
 
     [Fact]
