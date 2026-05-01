@@ -338,25 +338,21 @@ public readonly record struct Error
         if (!this.IsError) return string.Empty;
 
         var message = this.Message;
-
         var hasMemberName = !string.IsNullOrWhiteSpace(this.sourceMemberName);
-        if (!hasMemberName) return message;
+        var fileName = !string.IsNullOrWhiteSpace(this.sourceFilePath) ? Path.GetFileName(this.sourceFilePath) : string.Empty;
+        var hasFileName = !string.IsNullOrWhiteSpace(fileName);
+        var hasLineNumber = this.sourceLineNumber > 0;
 
-        var fileName = !string.IsNullOrWhiteSpace(this.sourceFilePath) 
-            ? Path.GetFileName(this.sourceFilePath) 
-            : string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(fileName) && this.sourceLineNumber > 0)
+        return (hasMemberName, hasFileName, hasLineNumber) switch
         {
-            return $"{message} at {this.sourceMemberName} in {fileName} (line {this.sourceLineNumber})";
-        }
-
-        if (!string.IsNullOrWhiteSpace(fileName))
-        {
-            return $"{message} at {this.sourceMemberName} in {fileName}";
-        }
-
-        return $"{message} at {this.sourceMemberName}";
+            (true, true, true) => $"{message} at {this.sourceMemberName} in {fileName} (line {this.sourceLineNumber})",
+            (true, true, false) => $"{message} at {this.sourceMemberName} in {fileName}",
+            (true, false, _) => $"{message} at {this.sourceMemberName}",
+            (false, true, true) => $"{message} in {fileName} (line {this.sourceLineNumber})",
+            (false, true, false) => $"{message} in {fileName}",
+            (false, false, true) => $"{message} (line {this.sourceLineNumber})",
+            _ => message,
+        };
     }
 
     /// <summary>
