@@ -430,21 +430,127 @@ public readonly record struct Error
         if (!this.IsError) return string.Empty;
 
         var message = this.Message;
-        var hasMemberName = !string.IsNullOrWhiteSpace(this.sourceMemberName);
-        var fileName = !string.IsNullOrWhiteSpace(this.sourceFilePath) ? Path.GetFileName(this.sourceFilePath) : string.Empty;
-        var hasFileName = !string.IsNullOrWhiteSpace(fileName);
+        var memberName = string.IsNullOrWhiteSpace(this.sourceMemberName) ? null : this.sourceMemberName;
+        var hasMemberName = memberName is not null;
+        var fileNameRange = GetFileNameRange(this.sourceFilePath);
+        var hasFileName = fileNameRange.Length > 0;
         var hasLineNumber = this.sourceLineNumber > 0;
 
-        return (hasMemberName, hasFileName, hasLineNumber) switch
+        if (!hasMemberName && !hasFileName && !hasLineNumber)
+            return message;
+
+        var includeLineNumber = hasLineNumber && (!hasMemberName || hasFileName);
+        var lineNumber = includeLineNumber ? this.sourceLineNumber!.Value : 0;
+        var memberNameLength = hasMemberName ? memberName?.Length ?? 0 : 0;
+
+        var length = message.Length;
+        if (hasMemberName)length += 4 + memberNameLength;
+        if (hasFileName)length += 4 + fileNameRange.Length;
+        if (includeLineNumber) length += 6 + CountDigits(lineNumber);
+
+        return string.Create(length, new ToStringState(
+            message,
+            memberName,
+            this.sourceFilePath,
+            fileNameRange.Start,
+            fileNameRange.Length,
+            lineNumber,
+            hasMemberName,
+            hasFileName,
+            includeLineNumber), static (buffer, state) =>
         {
-            (true, true, true)   => $"{message} at {this.sourceMemberName} in {fileName}:line {this.sourceLineNumber}",
-            (true, true, false)  => $"{message} at {this.sourceMemberName} in {fileName}",
-            (true, false, _)     => $"{message} at {this.sourceMemberName}",
-            (false, true, true)  => $"{message} in {fileName}:line {this.sourceLineNumber}",
-            (false, true, false) => $"{message} in {fileName}",
-            (false, false, true) => $"{message}:line {this.sourceLineNumber}",
-            _ => message,
-        };
+            var written = 0;
+
+            state.Message.AsSpan().CopyTo(buffer);
+            written += state.Message.Length;
+
+            if (state.HasMemberName)
+            {
+                " at ".AsSpan().CopyTo(buffer[written..]);
+                written += 4;
+
+                var memberName = state.MemberName;
+                if (memberName is not null)
+                {
+                    memberName.AsSpan().CopyTo(buffer[written..]);
+                    written += memberName.Length;
+                }
+            }
+
+            if (state.HasFileName)
+            {
+                " in ".AsSpan().CopyTo(buffer[written..]);
+                written += 4;
+
+                state.FilePath!.AsSpan(state.FileNameStart, state.FileNameLength).CopyTo(buffer[written..]);
+                written += state.FileNameLength;
+            }
+
+            if (state.IncludeLineNumber)
+            {
+                ":line ".AsSpan().CopyTo(buffer[written..]);
+                written += 6;
+                state.LineNumber.TryFormat(buffer[written..], out var charsWritten);
+            }
+        });
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (int Start, int Length) GetFileNameRange(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return default;
+
+        var span = path.AsSpan();
+        var end = span.Length;
+
+        while (end > 0 && IsDirectorySeparator(span[end - 1])) end--;
+
+        if (end == 0) return default;
+
+        var start = end - 1;
+        while (start >= 0 && !IsDirectorySeparator(span[start])) start--;
+
+        start++;
+        return (start, end - start);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsDirectorySeparator(char value) => 
+        value == Path.DirectorySeparatorChar || value == Path.AltDirectorySeparatorChar;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int CountDigits(int value)
+    {
+        var digits = 1;
+        while (value >= 10)
+        {
+            value /= 10;
+            digits++;
+        }
+
+        return digits;
+    }
+
+    private readonly struct ToStringState(
+        string message,
+        string? memberName,
+        string? filePath,
+        int fileNameStart,
+        int fileNameLength,
+        int lineNumber,
+        bool hasMemberName,
+        bool hasFileName,
+        bool includeLineNumber)
+    {
+        public readonly string Message = message;
+        public readonly string? MemberName = memberName;
+        public readonly string? FilePath = filePath;
+        public readonly int FileNameStart = fileNameStart;
+        public readonly int FileNameLength = fileNameLength;
+        public readonly int LineNumber = lineNumber;
+        public readonly bool HasMemberName = hasMemberName;
+        public readonly bool HasFileName = hasFileName;
+        public readonly bool IncludeLineNumber = includeLineNumber;
     }
 
     /// <summary>
