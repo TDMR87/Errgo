@@ -11,7 +11,7 @@
     <PackageId>Errgo</PackageId>
     <Version>0.1.0</Version>
     <Authors>Diego Rönkkömäki-Tapia</Authors>
-    <Description>Go-style errors-as-values library for C#</Description>
+    <Description>Errors-as-values in C#</Description>
     <PackageTags>error-handling;go;errors;result</PackageTags>
     <PackageProjectUrl>https://github.com/TDMR87/Errgo</PackageProjectUrl>
     <RepositoryUrl>https://github.com/TDMR87/Errgo</RepositoryUrl>
