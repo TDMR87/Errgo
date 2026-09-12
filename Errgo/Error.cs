@@ -177,10 +177,15 @@ public readonly record struct Error
     public static Error Sentinel(string message) => new(message, null, null, null);
 
     /// <summary>
-    /// Combines the given errors, discarding any null or non-error values.
+    /// Join combines the given errors, returning a new Error where the given 
+    /// Errors are the new Error's inner errors. 
+    /// 
+    /// Discards any null or a non-error values.
+    /// 
     /// Returns <see cref="Error.None"/> if every value in <paramref name="errors"/> is null or non-error.
-    /// The first valid error becomes the root error; its existing inner chain is preserved,
-    /// and additional valid errors are appended to that chain in argument order.
+    /// 
+    /// Each errors existing inner errors are preserved and appended to the inner errors 
+    /// of the returned Error in argument order.
     /// </summary>
     /// <remarks>
     /// An <see cref="Error"/> value returned by Join exposes joined errors through <see cref="InnerErrors"/>.
@@ -188,13 +193,17 @@ public readonly record struct Error
     /// </remarks>
     /// <param name="errors">Errors to join.</param>
     /// <returns>
-    /// <see cref="Error.None"/> if every value in <paramref name="errors"/> is null or non-error;
+    /// <see cref="Error.None"/> if every value in <paramref name="errors"/> is null or a non-error;
     /// otherwise an aggregated <see cref="Error"/>.
     /// </returns>
     public static Error Join(params Error?[]? errors)
     {
-        if (errors is null || errors.Length == 0) return None;
+        if (errors is null || errors.Length == 0)
+        {
+            return None;
+        }
 
+        // Filter out non-errors
         var validErrors = new List<Error>(errors.Length);
         for (int i = 0; i < errors.Length; i++)
         {
@@ -207,156 +216,37 @@ public readonly record struct Error
         if (validErrors.Count == 0) return None;
         if (validErrors.Count == 1) return validErrors[0];
 
-        var rootError = validErrors[0];
-        int firstErrInnerCount = rootError.innerErrors?.Length ?? 0;
+        var firstError = validErrors[0];
+        var rootErrInnerCount = firstError.innerErrors?.Length ?? 0;
 
-        var mergedErrors = new Error[firstErrInnerCount + (validErrors.Count - 1)];
+        // Holds all the joined errors to be returned
+        var joinedErrors = new Error[rootErrInnerCount + (validErrors.Count - 1)];
 
-        int destinationIndex = 0;
-        if (firstErrInnerCount > 0)
+        // Each valid error might themselves contain inner errors.
+        // Root error's inner errors are placed first into the destination array.
+        if (rootErrInnerCount > 0) 
         {
-            // Root error's inner errors are placed first
             Array.Copy(
-                sourceArray: rootError.innerErrors,
+                sourceArray: firstError.innerErrors,
                 sourceIndex: 0,
-                destinationArray: mergedErrors,
+                destinationArray: joinedErrors,
                 destinationIndex: 0,
-                length: firstErrInnerCount);
-
-            destinationIndex = firstErrInnerCount;
+                length: rootErrInnerCount);
         }
 
-        // Skip the root error and append the additional errors
+        // Append the additional errors after the root's errors
         for (int i = 1; i < validErrors.Count; i++)
         {
-            mergedErrors[destinationIndex++] = validErrors[i];
+            joinedErrors[rootErrInnerCount++] = validErrors[i];
         }
 
         return new Error(
-            isError: rootError.IsError,
-            message: rootError.message,
-            sourceMemberName: rootError.sourceMemberName,
-            sourceFilePath: rootError.sourceFilePath,
-            sourceLineNumber: rootError.sourceLineNumber,
-            innerErrors: mergedErrors);
-    }
-
-    /// <summary>
-    /// Combines <paramref name="root"/> and the given <paramref name="errors"/>, 
-    /// prepending <paramref name="root"/> to <paramref name="errors"/> and discarding any null or non-error values.
-    /// </summary>
-    /// <remarks>
-    /// The first valid error in the combined sequence becomes the resulting root error.
-    /// Joined errors may be inspected with <see cref="InnerErrors"/>, <see cref="Is"/>, and <see cref="As"/>.
-    /// </remarks>
-    /// <param name="root">Root error to prepend in to the chain.</param>
-    /// <param name="errors">Additional errors to join.</param>
-    /// <returns>
-    /// <see cref="Error.None"/> if neither <paramref name="root"/> nor <paramref name="errors"/> contain an error;
-    /// otherwise an aggregated <see cref="Error"/>.
-    /// </returns>
-    public static Error Join(Error root, Error?[]? errors)
-    {
-        if (errors is null || errors.Length == 0)
-            return root.IsError ? root : None;
-
-        if (root.IsError)
-        {
-            var additionalErrorCount = 0;
-            for (int i = 0; i < errors.Length; i++)
-            {
-                if (errors[i] is Error error && error.IsError) 
-                    additionalErrorCount++;
-            }
-
-            if (additionalErrorCount == 0) return root;
-
-            var existingInnerCount = root.innerErrors?.Length ?? 0;
-            var mergedErrors = new Error[existingInnerCount + additionalErrorCount];
-
-            var destinationIndex = 0;
-            if (existingInnerCount > 0)
-            {
-                Array.Copy(
-                    sourceArray: root.innerErrors,
-                    sourceIndex: 0,
-                    destinationArray: mergedErrors,
-                    destinationIndex: 0,
-                    length: existingInnerCount);
-
-                destinationIndex = existingInnerCount;
-            }
-
-            for (int i = 0; i < errors.Length; i++)
-            {
-                if (errors[i] is Error error && error.IsError)
-                    mergedErrors[destinationIndex++] = error;
-            }
-
-            return new Error(
-                isError: true,
-                message: root.message,
-                sourceMemberName: root.sourceMemberName,
-                sourceFilePath: root.sourceFilePath,
-                sourceLineNumber: root.sourceLineNumber,
-                innerErrors: mergedErrors);
-        }
-
-        Error rootError = None;
-        var firstValidIndex = -1;
-
-        for (int i = 0; i < errors.Length; i++)
-        {
-            if (errors[i] is Error error && error.IsError)
-            {
-                rootError = error;
-                firstValidIndex = i;
-                break;
-            }
-        }
-
-        if (firstValidIndex < 0) return None;
-
-        var trailingErrorCount = 0;
-        for (int i = firstValidIndex + 1; i < errors.Length; i++)
-        {
-            if (errors[i] is Error error && error.IsError)
-                trailingErrorCount++;
-        }
-
-        if (trailingErrorCount == 0) return rootError;
-
-        var rootInnerCount = rootError.innerErrors?.Length ?? 0;
-        var mergedRootErrors = new Error[rootInnerCount + trailingErrorCount];
-
-        var mergedIndex = 0;
-        if (rootInnerCount > 0)
-        {
-            Array.Copy(
-                sourceArray: rootError.innerErrors,
-                sourceIndex: 0,
-                destinationArray: mergedRootErrors,
-                destinationIndex: 0,
-                length: rootInnerCount);
-
-            mergedIndex = rootInnerCount;
-        }
-
-        for (int i = firstValidIndex + 1; i < errors.Length; i++)
-        {
-            if (errors[i] is Error error && error.IsError)
-            {
-                mergedRootErrors[mergedIndex++] = error;
-            }
-        }
-
-        return new Error(
-            isError: true,
-            message: rootError.message,
-            sourceMemberName: rootError.sourceMemberName,
-            sourceFilePath: rootError.sourceFilePath,
-            sourceLineNumber: rootError.sourceLineNumber,
-            innerErrors: mergedRootErrors);
+            isError: firstError.IsError,
+            message: firstError.message,
+            sourceMemberName: firstError.sourceMemberName,
+            sourceFilePath: firstError.sourceFilePath,
+            sourceLineNumber: firstError.sourceLineNumber,
+            innerErrors: joinedErrors);
     }
 
     /// <summary>

@@ -6,7 +6,7 @@ namespace Errgo.Benchmarks;
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
-public class PerformanceBenchmarks
+public class Benchmark_Performance
 {
     private Error _chainedError;
 

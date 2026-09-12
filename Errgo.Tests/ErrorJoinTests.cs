@@ -7,25 +7,24 @@ public class ErrorJoinTests
     [Fact]
     public void Error_Join_WithNullArray_DoesNotThrow()
     {
-        var err = new Error("Original");
-        err = Error.Join(err, null!);
-        Assert.Equal("Original", err.Message);
+        Error?[] arr = null!;
+        var err = Error.Join(arr);
         Assert.Empty(err.InnerErrors);
+        Assert.True(err == Error.None);
     }
 
     [Fact]
     public void Error_Join_WithEmptyArray_DoesNotThrow()
     {
-        var err = new Error("Original");
-        err = Error.Join(err, Array.Empty<Error?>());
-        Assert.Equal("Original", err.Message);
+        var err = Error.Join(Array.Empty<Error?>());
         Assert.Empty(err.InnerErrors);
+        Assert.True(err == Error.None);
     }
 
     [Fact]
     public void Error_Join_NonErrors_EqualsFalse()
     {
-        var err = Error.Join(Error.None, Array.Empty<Error?>());
+        var err = Error.Join(Error.None, Error.None, Error.None);
         Assert.False(err);
     }
 

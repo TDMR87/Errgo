@@ -13,8 +13,8 @@ public class Benchmark_Join
 
     private Error?[] allErrors = [];
     private Error?[] joinedErrors = [];
-    private Error?[] joinErrorsWithRoot = [];
-    private Error?[] joinErrorsWithExistingRoot = [];
+    private Error?[] joinedErrorsWithRoot = [];
+    private Error?[] joinedErrorsWithExistingRoot = [];
     private Error existingErrorChain;
 
     [Params(1, 4, 16, 64)]
@@ -40,19 +40,19 @@ public class Benchmark_Join
         joinedErrors = new Error?[JoinCount];
         Array.Copy(allErrors, joinedErrors, JoinCount);
 
-        joinErrorsWithRoot = new Error?[JoinCount + 1];
-        joinErrorsWithRoot[0] = new Error("Root");
-        Array.Copy(joinedErrors, 0, joinErrorsWithRoot, 1, JoinCount);
+        joinedErrorsWithRoot = new Error?[JoinCount + 1];
+        joinedErrorsWithRoot[0] = new Error("Root");
+        Array.Copy(joinedErrors, 0, joinedErrorsWithRoot, 1, JoinCount);
 
-        joinErrorsWithExistingRoot = new Error?[JoinCount + 1];
-        joinErrorsWithExistingRoot[0] = new Error("Root", existingErrorChain);
-        Array.Copy(joinedErrors, 0, joinErrorsWithExistingRoot, 1, JoinCount);
+        joinedErrorsWithExistingRoot = new Error?[JoinCount + 1];
+        joinedErrorsWithExistingRoot[0] = new Error("Root", existingErrorChain);
+        Array.Copy(joinedErrors, 0, joinedErrorsWithExistingRoot, 1, JoinCount);
     }
 
     [Benchmark(Baseline = true, Description = "Join static array")]
     public void JoinParams()
     {
-        var result = Error.Join(joinErrorsWithRoot);
+        var result = Error.Join(joinedErrorsWithRoot);
         consumer.Consume(result);
         consumer.Consume(result.InnerErrors.Count);
     }
@@ -67,15 +67,6 @@ public class Benchmark_Join
         }
         consumer.Consume(root);
         consumer.Consume(root.InnerErrors.Count);
-    }
-
-    [Benchmark(Description = "Join array into root with existing errors")]
-    public void JoinParams_ExistingChain()
-    {
-        var wrapper = new Error("wrapper");
-        var result = Error.Join(wrapper, joinErrorsWithExistingRoot);
-        consumer.Consume(result);
-        consumer.Consume(result.InnerErrors.Count);
     }
 }
 

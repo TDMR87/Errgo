@@ -13,7 +13,7 @@ namespace Errgo.Benchmarks;
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.Method)]
 [RankColumn]
-public class ComparisonBenchmarks
+public class Benchmark_Comparisons
 {
     private readonly Consumer consumer = new();
 
