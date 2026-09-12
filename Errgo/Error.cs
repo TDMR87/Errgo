@@ -11,12 +11,11 @@ public readonly record struct Error
     private readonly Error[]? innerErrors;
 
     /// <summary>
-    /// These two flags distinguish runtime-default values from explicitly constructed values.
-    /// e.g. default/default(Error) results in isConstructed=false and isExplicitError=false and is still treated as an error.
-    /// Error.None (isConstructed=true and isExplicitError=false) is treated as a non-error.
+    /// A single discriminant distinguishing the runtime-default value from explicitly constructed values.
+    /// default(Error) results in state = <see cref="ErrorState.Default"/> and is still treated as an error.
+    /// Error.None (state = <see cref="ErrorState.None"/>) is treated as a non-error.
     /// </summary>
-    private readonly bool isConstructed;
-    private readonly bool isExplicitError;
+    private readonly ErrorState state;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -27,8 +26,7 @@ public readonly record struct Error
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Error()
     {
-        this.isConstructed    = true;
-        this.isExplicitError  = true;
+        this.state            = ErrorState.Constructed;
         this.sourceMemberName = null;
         this.sourceFilePath   = null;
         this.sourceLineNumber = null;
@@ -55,8 +53,7 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.isConstructed    = true;
-        this.isExplicitError = true;
+        this.state           = ErrorState.Constructed;
         this.sourceMemberName = memberName;
         this.sourceFilePath   = filePath;
         this.sourceLineNumber = lineNumber;
@@ -86,8 +83,7 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.isConstructed    = true;
-        this.isExplicitError  = true;
+        this.state           = ErrorState.Constructed;
         this.sourceMemberName = memberName;
         this.sourceFilePath   = filePath;
         this.sourceLineNumber = lineNumber;
@@ -102,8 +98,7 @@ public readonly record struct Error
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Error(bool isError)
     {
-        this.isConstructed    = true;
-        this.isExplicitError = isError;
+        this.state            = isError ? ErrorState.Constructed : ErrorState.None;
         this.message          = null;
         this.sourceMemberName = null;
         this.sourceFilePath   = null;
@@ -120,8 +115,7 @@ public readonly record struct Error
         int? sourceLineNumber,
         Error[]? innerErrors)
     {
-        this.isConstructed    = true;
-        this.isExplicitError = isError;
+        this.state            = isError ? ErrorState.Constructed : ErrorState.None;
         this.message          = message;
         this.sourceMemberName = sourceMemberName;
         this.sourceFilePath   = sourceFilePath;
@@ -142,7 +136,7 @@ public readonly record struct Error
     /// <remarks>
     /// Always use this property to check if an Error instance represents an error or not.
     /// </remarks>
-    private bool IsError => !isConstructed || isExplicitError;
+    private bool IsError => state != ErrorState.None;
 
     /// <summary>
     /// Returns the canonical non-error sentinel value.
@@ -523,7 +517,7 @@ public readonly record struct Error
     {
         if (!this.IsError && !target.IsError) return true;
         if (!this.IsError || !target.IsError) return false;
-        if (!this.isConstructed && !target.isConstructed) return true;
+        if (this.state == ErrorState.Default && target.state == ErrorState.Default) return true;
 
         if (this.Message.Equals(target.Message, StringComparison.Ordinal))
             return true;
@@ -552,7 +546,7 @@ public readonly record struct Error
 
         if (!this.IsError) return false;
         if (!target.IsError) return false;
-        if (!this.isConstructed && !target.isConstructed)
+        if (this.state == ErrorState.Default && target.state == ErrorState.Default)
         {
             match = this;
             return true;
@@ -614,6 +608,30 @@ public readonly record struct Error
             return message;
 
         return string.IsNullOrWhiteSpace(message) ? Constants.DefaultErrorMessage : message;
+    }
+
+    /// <summary>
+    /// ErrorState indicates the internal runtime state of an <see cref="Error"/> value
+    /// so we can differentiate Error.Empty, Error.None, default(error) and new Error():
+    /// </summary>
+    private enum ErrorState : byte
+    {
+        /// <summary>
+        /// ErrorState.Default = 0 is the enum's zero value, a zeroed struct (default(Error)). 
+        /// so default(Error) zeroes the whole struct and state will be <see langword="default"/> 
+        /// An Error value in this state is still considered an error.
+        /// </summary>
+        Default = 0,
+
+        /// <summary>
+        /// The canonical non-error state (Error.None) will be in this state.
+        /// </summary>
+        None = 1,
+
+        /// <summary>
+        /// Any explicitly constructed error value will be in this state.
+        /// </summary>
+        Constructed = 2
     }
 
     private static class Constants
