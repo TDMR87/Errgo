@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Errgo.Tests;
 
 public class ErrorJoinTests
@@ -239,53 +241,71 @@ public class ErrorJoinTests
 
         var chain3 = new Error("Chain 3 Outer");
 
-        // Join all chains in a single call
+        // Join all chains in a single call to a new root error
         var rootError = new Error("Root");
         rootError = Error.Join(rootError, chain1, chain2, chain3);
 
-        var innerErrors = rootError.InnerErrors;
-
         // Expected order when joining multiple chains at once
-        Assert.Equal(6, innerErrors.Count);
-        Assert.Equal("Chain 1 Outer", innerErrors.ElementAt(0).Message);
-        Assert.Equal("Chain 1 Inner", innerErrors.ElementAt(1).Message);
-        Assert.Equal("Chain 2 Outer", innerErrors.ElementAt(2).Message);
-        Assert.Equal("Chain 2 Inner 2", innerErrors.ElementAt(3).Message);
-        Assert.Equal("Chain 2 Inner 1", innerErrors.ElementAt(4).Message);
-        Assert.Equal("Chain 3 Outer", innerErrors.ElementAt(5).Message);
+        Assert.Equal(6, rootError.InnerErrors.Count);
+        Assert.Equal("Root", rootError.Message);
+        Assert.Equal("Chain 1 Outer", rootError.InnerErrors.ElementAt(0).Message);
+        Assert.Equal("Chain 1 Inner", rootError.InnerErrors.ElementAt(1).Message);
+        Assert.Equal("Chain 2 Outer", rootError.InnerErrors.ElementAt(2).Message);
+        Assert.Equal("Chain 2 Inner 2", rootError.InnerErrors.ElementAt(3).Message);
+        Assert.Equal("Chain 2 Inner 1", rootError.InnerErrors.ElementAt(4).Message);
+        Assert.Equal("Chain 3 Outer", rootError.InnerErrors.ElementAt(5).Message);
     }
 
     [Fact]
     public void Error_Join_MixedSequentialAndBatchJoinsWithChains_CorrectOrder()
     {
-        var rootError = new Error("Request failed");
+        var rootError = new Error("Root error");
 
-        // Join a simple error
+        // Join a single error
         rootError = Error.Join(rootError, new Error("Network timeout"));
 
         // Join an error with a chain (2 errors total)
-        var validationInner = new Error("Email invalid");
-        var validationOuter = new Error("Validation failed", validationInner);
-        rootError = Error.Join(rootError, validationOuter);
+        var errorInner = new Error("Email invalid");
+        var errorOuter = new Error("Validation failed", errorInner);
+        rootError = Error.Join(rootError, errorOuter);
 
-        // Join multiple chains at once (3 errors total)
-        var dbInner = new Error("Table not found");
-        var dbOuter = new Error("Query failed", dbInner);
-        var cacheError = new Error("Cache miss");
-        rootError = Error.Join(rootError, dbOuter, cacheError);
+        // Join multiple chains
+        var err1 = new Error("Table not found");
+        var err2 = new Error("Query failed", err1);
+        var err3 = new Error("Cache miss");
+        rootError = Error.Join(rootError, err2, err3);
 
-        // Join another simple error
+        // Join another single error
         rootError = Error.Join(rootError, new Error("Retry limit exceeded"));
 
-        var innerErrors = rootError.InnerErrors;
+        Assert.Equal(7, rootError.InnerErrors.Count);
+        Assert.Equal("Root error", rootError.Message);
+        Assert.Equal("Network timeout", rootError.InnerErrors[0].Message);
+        Assert.Equal("Validation failed", rootError.InnerErrors[1].Message);
+        Assert.Equal("Email invalid", rootError.InnerErrors[2].Message);
+        Assert.Equal("Query failed", rootError.InnerErrors[3].Message);
+        Assert.Equal("Table not found", rootError.InnerErrors[4].Message);
+        Assert.Equal("Cache miss", rootError.InnerErrors[5].Message);
+        Assert.Equal("Retry limit exceeded", rootError.InnerErrors[6].Message);
+    }
 
-        Assert.Equal(7, innerErrors.Count);
-        Assert.Equal("Network timeout", innerErrors[0].Message);
-        Assert.Equal("Validation failed", innerErrors[1].Message);
-        Assert.Equal("Email invalid", innerErrors[2].Message);
-        Assert.Equal("Query failed", innerErrors[3].Message);
-        Assert.Equal("Table not found", innerErrors[4].Message);
-        Assert.Equal("Cache miss", innerErrors[5].Message);
-        Assert.Equal("Retry limit exceeded", innerErrors[6].Message);
+    [Fact]
+    public void Error_Join_And_ConstructorChaining_ProduceSameStack()
+    {
+        const string memberName = nameof(Error_Join_And_ConstructorChaining_ProduceSameStack);
+        string filePath = Assembly.GetExecutingAssembly().Location;
+
+        var firstJoinError = new Error("First error", memberName, filePath, 101);
+        var secondJoinError = new Error("Second error", memberName, filePath, 102);
+        var thirdJoinError = new Error("Final error", memberName, filePath, 103);
+        var joinRootError = new Error("Root error", memberName, filePath, 100);
+        joinRootError = Error.Join(joinRootError, thirdJoinError, secondJoinError, firstJoinError);
+
+        var firstConstructorError = new Error("First error", memberName, filePath, 101);
+        var secondConstructorError = new Error("Second error", firstConstructorError, memberName, filePath, 102);
+        var thirdConstructorError = new Error("Final error", secondConstructorError, memberName, filePath, 103);
+        var constructorRootError = new Error("Root error", thirdConstructorError, memberName, filePath, 100);
+
+        Assert.Equal(joinRootError.Stack, constructorRootError.Stack);
     }
 }

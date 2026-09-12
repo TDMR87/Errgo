@@ -12,7 +12,7 @@ public readonly record struct Error
 
     /// <summary>
     /// These two flags distinguish runtime-default values from explicitly constructed values.
-    /// e.g. default(Error) results in isConstructed=false and isExplicitError=false and is still treated as an error.
+    /// e.g. default/default(Error) results in isConstructed=false and isExplicitError=false and is still treated as an error.
     /// Error.None (isConstructed=true and isExplicitError=false) is treated as a non-error.
     /// </summary>
     private readonly bool isConstructed;

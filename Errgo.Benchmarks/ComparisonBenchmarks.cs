@@ -144,27 +144,85 @@ public class ComparisonBenchmarks
     }
 
 
-    [Benchmark(Description = "Multiple chained unsuccessful results - Errgo")]
-    public void ErrorChaining_Errgo()
+    [Benchmark(Description = "Multiple chained unsuccessful results - Errgo (Join)")]
+    public void ErrorChaining_Errgo_Join()
+    {
+        var firstError = new Errgo.Error("First error");
+        var secondError = new Errgo.Error("Second error");
+        var thirdError = new Errgo.Error("Final error");
+        var rootError = new Error("Root error");
+        rootError = Error.Join(rootError, thirdError, secondError, firstError);
+        consumer.Consume(rootError);
+    }
+
+    [Benchmark(Description = "Multiple chained unsuccessful results - Errgo (Constructor)")]
+    public void ErrorChaining_Errgo_Constructor()
     {
         var firstError = new Errgo.Error("First error");
         var secondError = new Errgo.Error("Second error", firstError);
         var thirdError = new Errgo.Error("Final error", secondError);
-
-        var rootError = new Error("Root error");
-        rootError = Error.Join(rootError, thirdError);
+        var rootError = new Errgo.Error("Root error", thirdError);
         consumer.Consume(rootError);
     }
 
-    [Benchmark(Description = "Multiple chained unsuccessful results - FluentResults")]
+    [Benchmark(Description = "Multiple chained unsuccessful results - FluentResults (Caused.By)")]
     public void ErrorChaining_FluentResults()
     {
         var firstError = new FluentResults.Error("First error");
         var secondError = new FluentResults.Error("Second error").CausedBy(firstError);
         var thirdError = new FluentResults.Error("Final error").CausedBy(secondError);
-
         var rootError = new FluentResults.Error("Root error").CausedBy(thirdError);
         consumer.Consume(rootError);
+    }
+
+    [Benchmark(Description = "Multiple chained unsuccessful results - FluentResults (Result.Fail)")]
+    public void ErrorChaining_FluentResults_ResultFail()
+    {
+        FluentResults.Error firstError = new("First error");
+        FluentResults.Error secondError = new("Second error", firstError);
+        FluentResults.Error thirdError = new("Final error", secondError);
+        FluentResults.Result result = FluentResults.Result.Fail(new FluentResults.Error("Root error", thirdError));
+        consumer.Consume(result);
+    }
+
+    [Benchmark(Description = "Multiple chained unsuccessful results - ErrorOr")]
+    public void ErrorChaining_ErrorOr()
+    {
+        var errors = new List<ErrorOr.Error>();
+        errors.Add(ErrorOr.Error.Failure(description: "Root error"));
+        errors.Add(ErrorOr.Error.Failure(description: "Final error"));
+        errors.Add(ErrorOr.Error.Failure(description: "Second error"));
+        errors.Add(ErrorOr.Error.Failure(description: "First error"));
+
+        ErrorOr<int> result = errors;
+
+        consumer.Consume(result);
+    }
+
+    [Benchmark(Description = "Multiple chained unsuccessful results - Ardalis")]
+    public void ErrorChaining_Ardalis()
+    {
+        var errors = new List<Ardalis.Result.ValidationError>();
+        errors.Add(new Ardalis.Result.ValidationError { ErrorMessage = "Root error" });
+        errors.Add(new Ardalis.Result.ValidationError { ErrorMessage = "Final error" });
+        errors.Add(new Ardalis.Result.ValidationError { ErrorMessage = "Second error" });
+        errors.Add(new Ardalis.Result.ValidationError { ErrorMessage = "First error" });
+
+        var result = Ardalis.Result.Result<int>.Invalid(errors);
+        consumer.Consume(result);
+    }
+
+    [Benchmark(Description = "Multiple chained unsuccessful results - LightResults")]
+    public void ErrorChaining_LightResults()
+    {
+        var errors = new List<LightResults.Error>();
+        errors.Add(new LightResults.Error("Root error"));
+        errors.Add(new LightResults.Error("Final error"));
+        errors.Add(new LightResults.Error("Second error"));
+        errors.Add(new LightResults.Error("First error"));
+
+        var result = LightResults.Result.Failure<int>(errors);
+        consumer.Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
