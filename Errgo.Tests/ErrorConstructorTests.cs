@@ -38,10 +38,12 @@ public class ErrorConstructorTests
     }
 
     [Fact]
-    public void Error_DefaultConstructor_WithEmptyMessageCapturesSourceLocation()
+    public void Error_DefaultConstructor_WithEmptyMessageCapturesSourceLocationInfo()
     {
         Error err = new(string.Empty);
         Assert.NotNull(err.SourceMemberName);
+        Assert.NotNull(err.SourceFilePath);
+        Assert.NotNull(err.SourceLineNumber);
     }
 
     [Fact]
@@ -84,14 +86,14 @@ public class ErrorConstructorTests
     }
 
     [Fact]
-    public void Error_DefaultInArray_IsErrorNone()
+    public void Error_DefaultInArray_IsNot_ErrorNone()
     {
-        var errors = new Error[3];
+        var errorArray = new Error[3];
 
-        Assert.Equal(default, errors[0]);
-        Assert.Equal(default, errors[1]);
-        Assert.Equal(default, errors[2]);
-        Assert.DoesNotContain(Error.None, errors);
+        Assert.Equal(default, errorArray[0]);
+        Assert.Equal(default, errorArray[1]);
+        Assert.Equal(default, errorArray[2]);
+        Assert.DoesNotContain(Error.None, errorArray);
     }
 
     [Fact]

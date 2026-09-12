@@ -35,7 +35,7 @@ public class ErrorInnerErrorsTests
     }
 
     [Fact]
-    public void Error_InnerErrors_OnlyShowsErrorsJoinedByThis()
+    public void Error_InnerErrors_OnlyShowsInnerErrors()
     {
         var err1 = new Error("Error 1");
         var err2 = new Error("Error 2", err1);

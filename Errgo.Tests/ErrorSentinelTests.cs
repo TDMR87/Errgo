@@ -64,18 +64,7 @@ public class ErrorSentinelTests
     }
 
     [Fact]
-    public void Error_SentinelError_ChainingJoin()
-    {
-        var err = new Error($"Some error happened", Errors.NotFound);
-        var joiner = Error.Empty;
-        joiner = Error.Join(joiner, err);
-        Assert.True(joiner);
-        Assert.Contains("Some error happened", joiner.Stack);
-        Assert.Contains("Item not found", joiner.Stack);
-    }
-
-    [Fact]
-    public void Error_SentinelError_ChainingConstructor2()
+    public void Error_SentinelError_ChainingConstructor_ViaReturn()
     {
         var itemId = 123;
 
@@ -87,6 +76,17 @@ public class ErrorSentinelTests
         var (_, err) = GetItemById(itemId);
         Assert.Contains($"Failed to get item with id {itemId}", err.Stack);
         Assert.Contains($"Item not found", err.Stack);
+    }
+
+    [Fact]
+    public void Error_SentinelError_ChainingJoin()
+    {
+        var err = new Error($"Some error happened", Errors.NotFound);
+        var joiner = Error.Empty;
+        joiner = Error.Join(joiner, err);
+        Assert.True(joiner);
+        Assert.Contains("Some error happened", joiner.Stack);
+        Assert.Contains("Item not found", joiner.Stack);
     }
 }
 

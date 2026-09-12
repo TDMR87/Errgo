@@ -30,7 +30,6 @@ public class ErrorMessageTests
     {
         var message = "Line1\nLine2\rLine3\r\nLine4";
         var err = new Error(message);
-
         Assert.Equal(message, err.Message);
     }
 
@@ -39,7 +38,6 @@ public class ErrorMessageTests
     {
         var message = "Error: ?? ?? émojis";
         var err = new Error(message);
-
         Assert.Equal(message, err.Message);
     }
 
@@ -48,7 +46,6 @@ public class ErrorMessageTests
     {
         var errEmpty = new Error("");
         var errNull = new Error(message: null);
-
         Assert.NotEqual(errEmpty, errNull);
     }
 
@@ -56,7 +53,6 @@ public class ErrorMessageTests
     public void Error_DefaultTruthyValue_ShouldExposeVisibleMessage()
     {
         var error = default(Error);
-
         Assert.True(error);
         Assert.False(string.IsNullOrWhiteSpace(error.Message));
     }
