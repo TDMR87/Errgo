@@ -9,17 +9,23 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>Errgo</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.0-alpha</Version>
     <Authors>Diego Rönkkömäki-Tapia</Authors>
     <Description>Errors-as-values in C#</Description>
-    <PackageTags>error-handling;go;errors;result</PackageTags>
+    <PackageTags>errgo, error-handling, errors, error, result, result pattern, go, gostyle, csharp, dotnet, netstandard, no-exceptions</PackageTags>
     <PackageProjectUrl>https://github.com/TDMR87/Errgo</PackageProjectUrl>
     <RepositoryUrl>https://github.com/TDMR87/Errgo</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
+    <PackageIcon>errgo_logo_sm.png</PackageIcon>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    
-    <!-- Include analyzers in package -->
-    <IncludeBuildOutput>true</IncludeBuildOutput>
+
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="README.nuget.md" Pack="true" PackagePath="\" />
+    <None Include="..\img\errgo_logo_sm.png" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>
