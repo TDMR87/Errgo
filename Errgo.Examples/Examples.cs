@@ -1,8 +1,5 @@
 namespace Errgo.Examples;
 
-public record class GameSession(string Hash);
-public record User(int Id, string Name);
-
 public static class Errors
 {
     // Define sentinel errors as static readonly fields for reusability
@@ -11,12 +8,6 @@ public static class Errors
     public static readonly Error NotFound           = Error.Sentinel("Not found");
     public static readonly Error ValidationFailed   = Error.Sentinel("Validation failed");
     public static readonly Error Unauthorized       = Error.Sentinel("Unauthorized");
-}
-
-class MyType
-{
-    public int MyProperty { get; set; }
-    public Error Error { get; set; }
 }
 
 public class Examples
@@ -64,23 +55,23 @@ public class Examples
 
     public static void TryPatternExample()
     {
-        if (!TryParseData("invalid", out var data, out var err))
-            Console.WriteLine($"Parse failed: {err.Message}");
+        if (!TryParseData("invalid", out var response))
+            Console.WriteLine($"Parse failed: {response.err.Message}");
         else
-            Console.WriteLine($"Successfully parsed: {data}");
+            Console.WriteLine($"Successfully parsed: {response.data}");
     }
 
-    private static bool TryParseData(string input, out object? data, out Error err)
+    private static bool TryParseData(string input, out (object? data, Error err) response)
     {
-        data = null;
+        response.data = null;
         if (input == "invalid")
         {
-            err = new Error("Parse failed");
+            response.err = new Error("Parse failed");
             return false;
         }
 
-        data = new { Value = input };
-        err = Error.None;
+        response.data = new { Value = input };
+        response.err = Error.None;
         return true;
     }
 
