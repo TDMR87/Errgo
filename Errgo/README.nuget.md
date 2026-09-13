@@ -1,6 +1,6 @@
-![errgo](img/errgo_logo_sm.png)
+# Errgo
 
-Go-style errors-as-values in C#
+Go-style errors-as-values in C#. Instead of throwing exceptions, you return a tuple of (`result`, `Error`) and check the error explicitly at the call-site.
 
 ## Install
 
