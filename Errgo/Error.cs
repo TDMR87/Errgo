@@ -360,6 +360,10 @@ public readonly record struct Error
         var span = path.AsSpan();
         var end = span.Length;
 
+        static bool IsDirectorySeparator(char value) =>
+            value == Path.DirectorySeparatorChar || 
+            value == Path.AltDirectorySeparatorChar;
+
         while (end > 0 && IsDirectorySeparator(span[end - 1])) end--;
 
         if (end == 0) return default;
@@ -370,10 +374,6 @@ public readonly record struct Error
         start++;
         return (start, end - start);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsDirectorySeparator(char value) => 
-        value == Path.DirectorySeparatorChar || value == Path.AltDirectorySeparatorChar;
 
     /// <summary>
     /// Recursively gets all inner errors in the error chain as a flat list (excluding the current error itself).

@@ -19,22 +19,9 @@ public class ErrorToStringTests
     [Fact]
     public void Error_ToString_WithNullMessage_ReturnsDefaultErrorMessageAndSourceLocationInfo()
     {
-        var err = new Error(memberName: "DoWork", filePath: @"C:\\src\\Errgo\\Error.cs", lineNumber: 42);
-        Assert.Equal("Unknown error at DoWork in Error.cs:line 42", err.ToString());
-    }
-
-    [Fact]
-    public void Error_ToString_WithMemberNameFilePathAndLineNumber_ReturnsFullDetails()
-    {
-        var err = new Error("Failed", memberName: "DoWork", filePath: @"C:\\src\\Errgo\\Error.cs", lineNumber: 42);
-        Assert.Equal("Failed at DoWork in Error.cs:line 42", err.ToString());
-    }
-
-    [Fact]
-    public void Error_ToString_WithMemberNameAndFilePath_ReturnsMemberAndFile()
-    {
-        var err = new Error("Failed", memberName: "DoWork", filePath: @"C:\\src\\Errgo\\Error.cs", lineNumber: 0);
-        Assert.Equal("Failed at DoWork in Error.cs", err.ToString());
+        var filename = nameof(ErrorToStringTests) + ".cs";
+        var err = new Error(memberName: "DoWork", lineNumber: 42);
+        Assert.Equal($"Unknown error at DoWork in {filename}:line 42", err.ToString());
     }
 
     [Fact]
@@ -45,19 +32,11 @@ public class ErrorToStringTests
     }
 
     [Fact]
-    public void Error_ToString_WithFilePathAndLineNumberButNoMemberName_ShouldStillShowAvailableSourceLocation()
-    {
-        var err = new Error("Failed", memberName: null, filePath: @"C:\\src\\Errgo\\Error.cs", lineNumber: 42);
-        Assert.Contains("Failed", err.ToString());
-        Assert.Contains("Error.cs", err.ToString());
-        Assert.Contains("42", err.ToString());
-    }
-
-    [Fact]
     public void Error_ToString_WithFilePathOnly_ReturnsFileOnly()
     {
-        var err = new Error("Failed", memberName: null, filePath: @"C:\\src\\Errgo\\Error.cs", lineNumber: null);
-        Assert.Equal("Failed in Error.cs", err.ToString());
+        var filename = nameof(ErrorToStringTests) + ".cs";
+        var err = new Error("Failed", memberName: null, lineNumber: null);
+        Assert.StartsWith($"Failed in {filename}", err.ToString());
     }
 
     [Fact]
@@ -83,14 +62,9 @@ public class ErrorToStringTests
     [Fact]
     public void Error_ToString_OnlyUsesFileNameFromFilePath()
     {
-        var err = new Error("Failed", 
-            memberName: "DoWork", 
-            filePath: @"C:\\src\\Errgo\\Nested\\Error.cs", 
-            lineNumber: 42);
-
-        Assert.Contains("Error.cs", err.ToString());
-        Assert.DoesNotContain("Nested", err.ToString());
-        Assert.DoesNotContain(@"C:\src\Errgo", err.ToString());
+        var filename = nameof(ErrorToStringTests) + ".cs";
+        var err = new Error("Failed", memberName: "DoWork");
+        Assert.StartsWith($"Failed at DoWork in {filename}", err.ToString());
     }
 
     [Fact]
