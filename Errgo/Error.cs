@@ -53,7 +53,7 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.state           = ErrorState.Constructed;
+        this.state            = ErrorState.Constructed;
         this.sourceMemberName = memberName;
         this.sourceFilePath   = filePath;
         this.sourceLineNumber = lineNumber;
@@ -83,7 +83,7 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.state           = ErrorState.Constructed;
+        this.state            = ErrorState.Constructed;
         this.sourceMemberName = memberName;
         this.sourceFilePath   = filePath;
         this.sourceLineNumber = lineNumber;
@@ -125,7 +125,8 @@ public readonly record struct Error
 
     /// <summary>
     /// Implicit conversion from Error to bool.
-    /// Error.None must evaluate to false, any other Error evaluates to true.
+    /// 
+    /// NOTE: Error.None must evaluate to false, any other Error evaluates to true.
     /// </summary>
     /// <param name="error"></param>
     public static implicit operator bool(Error error) => error.IsError;
@@ -299,7 +300,7 @@ public readonly record struct Error
                 hasLine = true;
             }
 
-            AppendStackLines(innerErrors, builder, ref hasLine);
+            AppendStack(innerErrors, builder, ref hasLine);
             return builder.ToString();
         }
     }
@@ -485,7 +486,7 @@ public readonly record struct Error
         }
     }
 
-    private static void AppendStackLines(Error[] errors, System.Text.StringBuilder builder, ref bool hasLine)
+    private static void AppendStack(Error[] errors, System.Text.StringBuilder builder, ref bool hasLine)
     {
         foreach (var error in errors)
         {
@@ -499,7 +500,7 @@ public readonly record struct Error
 
             if (error.innerErrors is not null)
             {
-                AppendStackLines(error.innerErrors, builder, ref hasLine);
+                AppendStack(error.innerErrors, builder, ref hasLine);
             }
         }
     }
@@ -596,18 +597,26 @@ public readonly record struct Error
         return StringComparer.Ordinal.GetHashCode(this.Message);
     }
 
+    // Checks whether the given message has meaningful content
+    // or returns the default error message if not.
     private static string NormalizeMessage(string? message)
     {
+        // Null messages are replaced with the default message
         if (message is null)
             return Constants.DefaultErrorMessage;
 
-        if (message.Length == 0)
+        // Explicit empty message is kept as-is
+        if (message.Length == 0) 
             return message;
 
-        if (!char.IsWhiteSpace(message[0]))
+        // If the first char is not whitespace, keep message as-is
+        if (!char.IsWhiteSpace(message[0])) 
             return message;
 
-        return string.IsNullOrWhiteSpace(message) ? Constants.DefaultErrorMessage : message;
+        // Otherwise check if the whole message is whitespace
+        return string.IsNullOrWhiteSpace(message) 
+            ? Constants.DefaultErrorMessage 
+            : message;
     }
 
     /// <summary>
