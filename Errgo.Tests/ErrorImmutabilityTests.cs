@@ -39,7 +39,7 @@ public class ErrorImmutabilityTests
 
         var errCopy = err1;
 
-        var field = typeof(Error).GetField("innerErrors",
+        var field = typeof(Error).GetField("_innerErrors",
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
 
         var arr1 = (Error[]?)field.GetValue(err1);

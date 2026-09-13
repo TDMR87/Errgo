@@ -4,18 +4,18 @@ namespace Errgo;
 
 public readonly record struct Error
 {
-    private readonly string?  message;
-    private readonly string?  sourceMemberName;
-    private readonly string?  sourceFilePath;
-    private readonly int?     sourceLineNumber;
-    private readonly Error[]? innerErrors;
+    private readonly string?  _message;
+    private readonly string?  _sourceMemberName;
+    private readonly string?  _sourceFilePath;
+    private readonly int?     _sourceLineNumber;
+    private readonly Error[]? _innerErrors;
 
     /// <summary>
     /// A single discriminant distinguishing the runtime-default value from explicitly constructed values.
     /// default(Error) results in state = <see cref="ErrorState.Default"/> and is still treated as an error.
     /// Error.None (state = <see cref="ErrorState.None"/>) is treated as a non-error.
     /// </summary>
-    private readonly ErrorState state;
+    private readonly ErrorState _state;
 
     /// <summary>
     /// Creates an error with a default error message.
@@ -26,12 +26,12 @@ public readonly record struct Error
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Error()
     {
-        this.state            = ErrorState.Constructed;
-        this.sourceMemberName = null;
-        this.sourceFilePath   = null;
-        this.sourceLineNumber = null;
-        this.innerErrors      = null;
-        this.message          = Constants.DefaultErrorMessage;
+        this._state            = ErrorState.Constructed;
+        this._sourceMemberName = null;
+        this._sourceFilePath   = null;
+        this._sourceLineNumber = null;
+        this._innerErrors      = null;
+        this._message          = Constants.DefaultErrorMessage;
     }
 
     /// <summary>
@@ -53,12 +53,12 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.state            = ErrorState.Constructed;
-        this.sourceMemberName = memberName;
-        this.sourceFilePath   = filePath;
-        this.sourceLineNumber = lineNumber;
-        this.innerErrors      = null;
-        this.message          = NormalizeMessage(message);
+        this._state            = ErrorState.Constructed;
+        this._sourceMemberName = memberName;
+        this._sourceFilePath   = filePath;
+        this._sourceLineNumber = lineNumber;
+        this._innerErrors      = null;
+        this._message          = NormalizeMessage(message);
     }
 
     /// <summary>
@@ -83,12 +83,12 @@ public readonly record struct Error
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int? lineNumber = null)
     {
-        this.state            = ErrorState.Constructed;
-        this.sourceMemberName = memberName;
-        this.sourceFilePath   = filePath;
-        this.sourceLineNumber = lineNumber;
-        this.message          = NormalizeMessage(message);
-        if (error.IsError) this.innerErrors = [error];
+        this._state            = ErrorState.Constructed;
+        this._sourceMemberName = memberName;
+        this._sourceFilePath   = filePath;
+        this._sourceLineNumber = lineNumber;
+        this._message          = NormalizeMessage(message);
+        if (error.IsError) this._innerErrors = [error];
     }
 
     /// <summary>
@@ -98,12 +98,12 @@ public readonly record struct Error
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Error(bool isError)
     {
-        this.state            = isError ? ErrorState.Constructed : ErrorState.None;
-        this.message          = null;
-        this.sourceMemberName = null;
-        this.sourceFilePath   = null;
-        this.sourceLineNumber = null;
-        this.innerErrors      = null;
+        this._state            = isError ? ErrorState.Constructed : ErrorState.None;
+        this._message          = null;
+        this._sourceMemberName = null;
+        this._sourceFilePath   = null;
+        this._sourceLineNumber = null;
+        this._innerErrors      = null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -115,12 +115,12 @@ public readonly record struct Error
         int? sourceLineNumber,
         Error[]? innerErrors)
     {
-        this.state            = isError ? ErrorState.Constructed : ErrorState.None;
-        this.message          = message;
-        this.sourceMemberName = sourceMemberName;
-        this.sourceFilePath   = sourceFilePath;
-        this.sourceLineNumber = sourceLineNumber;
-        this.innerErrors      = innerErrors;
+        this._state            = isError ? ErrorState.Constructed : ErrorState.None;
+        this._message          = message;
+        this._sourceMemberName = sourceMemberName;
+        this._sourceFilePath   = sourceFilePath;
+        this._sourceLineNumber = sourceLineNumber;
+        this._innerErrors      = innerErrors;
     }
 
     /// <summary>
@@ -137,7 +137,7 @@ public readonly record struct Error
     /// <remarks>
     /// Always use this property to check if an Error instance represents an error or not.
     /// </remarks>
-    private bool IsError => state != ErrorState.None;
+    private bool IsError => _state != ErrorState.None;
 
     /// <summary>
     /// Returns the canonical non-error sentinel value.
@@ -212,7 +212,7 @@ public readonly record struct Error
         if (validErrors.Count == 1) return validErrors[0];
 
         var firstError = validErrors[0];
-        var rootErrInnerCount = firstError.innerErrors?.Length ?? 0;
+        var rootErrInnerCount = firstError._innerErrors?.Length ?? 0;
 
         // Holds all the joined errors to be returned
         var joinedErrors = new Error[rootErrInnerCount + (validErrors.Count - 1)];
@@ -222,7 +222,7 @@ public readonly record struct Error
         if (rootErrInnerCount > 0) 
         {
             Array.Copy(
-                sourceArray: firstError.innerErrors,
+                sourceArray: firstError._innerErrors,
                 sourceIndex: 0,
                 destinationArray: joinedErrors,
                 destinationIndex: 0,
@@ -237,10 +237,10 @@ public readonly record struct Error
 
         return new Error(
             isError: firstError.IsError,
-            message: firstError.message,
-            sourceMemberName: firstError.sourceMemberName,
-            sourceFilePath: firstError.sourceFilePath,
-            sourceLineNumber: firstError.sourceLineNumber,
+            message: firstError._message,
+            sourceMemberName: firstError._sourceMemberName,
+            sourceFilePath: firstError._sourceFilePath,
+            sourceLineNumber: firstError._sourceLineNumber,
             innerErrors: joinedErrors);
     }
 
@@ -252,7 +252,7 @@ public readonly record struct Error
         get
         {
             if (!this.IsError) return string.Empty;
-            return message ?? Constants.DefaultErrorMessage;
+            return _message ?? Constants.DefaultErrorMessage;
         }
     }
 
@@ -264,17 +264,17 @@ public readonly record struct Error
     /// <summary>
     /// Gets the member (e.g. method or property name) where this error occurred.
     /// </summary>
-    public string? SourceMemberName => sourceMemberName;
+    public string? SourceMemberName => _sourceMemberName;
 
     /// <summary>
     /// Gets the source file's path where this error occurred.
     /// </summary>
-    public string? SourceFilePath => sourceFilePath;
+    public string? SourceFilePath => _sourceFilePath;
 
     /// <summary>
     /// Gets the line number where this error occurred.
     /// </summary>
-    public int? SourceLineNumber => sourceLineNumber;
+    public int? SourceLineNumber => _sourceLineNumber;
 
     /// <summary>
     /// Gets the full error stack as a single string containing all inner errors (if any) with source location info.
@@ -286,9 +286,11 @@ public readonly record struct Error
             if (!this.IsError) return string.Empty;
 
             var current = this.ToString();
-            if (innerErrors is null)
+            if (_innerErrors is null)
             {
-                return string.IsNullOrWhiteSpace(current) ? string.Empty : current;
+                return string.IsNullOrWhiteSpace(current) 
+                    ? string.Empty 
+                    : current;
             }
 
             var builder = new System.Text.StringBuilder();
@@ -300,7 +302,7 @@ public readonly record struct Error
                 hasLine = true;
             }
 
-            AppendStack(innerErrors, builder, ref hasLine);
+            AppendStack(_innerErrors, builder, ref hasLine);
             return builder.ToString();
         }
     }
@@ -314,70 +316,40 @@ public readonly record struct Error
     {
         if (!this.IsError) return string.Empty;
 
-        var message = this.Message;
-        var memberName = string.IsNullOrWhiteSpace(this.sourceMemberName) ? null : this.sourceMemberName;
+        var memberName = string.IsNullOrWhiteSpace(this._sourceMemberName) ? null : this._sourceMemberName;
         var hasMemberName = memberName is not null;
-        var fileNameRange = GetFileNameRange(this.sourceFilePath);
-        var hasFileName = fileNameRange.Length > 0;
-        var hasLineNumber = this.sourceLineNumber > 0;
+        var hasLineNumber = this._sourceLineNumber > 0;
+        var (fileNameStart, fileNameLength) = GetFileNameRange(this._sourceFilePath);
+        var hasFileName = fileNameLength > 0;
 
         if (!hasMemberName && !hasFileName && !hasLineNumber)
-            return message;
+        {
+            return this.Message;
+        }
+
+        var builder = new System.Text.StringBuilder();
+        builder.Append(this.Message);
+
+        if (hasMemberName)
+        {
+            builder.Append(" at ");
+            builder.Append(memberName);
+        }
+
+        if (hasFileName)
+        {
+            builder.Append(" in ");
+            builder.Append(this._sourceFilePath, fileNameStart, fileNameLength);
+        }
 
         var includeLineNumber = hasLineNumber && (!hasMemberName || hasFileName);
-        var lineNumber = includeLineNumber ? this.sourceLineNumber!.Value : 0;
-        var memberNameLength = hasMemberName ? memberName?.Length ?? 0 : 0;
-
-        var length = message.Length;
-        if (hasMemberName)length += 4 + memberNameLength;
-        if (hasFileName)length += 4 + fileNameRange.Length;
-        if (includeLineNumber) length += 6 + CountDigits(lineNumber);
-
-        return string.Create(length, new ToStringState(
-            message,
-            memberName,
-            this.sourceFilePath,
-            fileNameRange.Start,
-            fileNameRange.Length,
-            lineNumber,
-            hasMemberName,
-            hasFileName,
-            includeLineNumber), static (buffer, state) =>
+        if (includeLineNumber)
         {
-            var written = 0;
+            builder.Append(":line ");
+            builder.Append(this._sourceLineNumber!.Value);
+        }
 
-            state.Message.AsSpan().CopyTo(buffer);
-            written += state.Message.Length;
-
-            if (state.HasMemberName)
-            {
-                " at ".AsSpan().CopyTo(buffer[written..]);
-                written += 4;
-
-                var memberName = state.MemberName;
-                if (memberName is not null)
-                {
-                    memberName.AsSpan().CopyTo(buffer[written..]);
-                    written += memberName.Length;
-                }
-            }
-
-            if (state.HasFileName)
-            {
-                " in ".AsSpan().CopyTo(buffer[written..]);
-                written += 4;
-
-                state.FilePath!.AsSpan(state.FileNameStart, state.FileNameLength).CopyTo(buffer[written..]);
-                written += state.FileNameLength;
-            }
-
-            if (state.IncludeLineNumber)
-            {
-                ":line ".AsSpan().CopyTo(buffer[written..]);
-                written += 6;
-                state.LineNumber.TryFormat(buffer[written..], out var charsWritten);
-            }
-        });
+        return builder.ToString();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -403,41 +375,6 @@ public readonly record struct Error
     private static bool IsDirectorySeparator(char value) => 
         value == Path.DirectorySeparatorChar || value == Path.AltDirectorySeparatorChar;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int CountDigits(int value)
-    {
-        var digits = 1;
-        while (value >= 10)
-        {
-            value /= 10;
-            digits++;
-        }
-
-        return digits;
-    }
-
-    private readonly struct ToStringState(
-        string message,
-        string? memberName,
-        string? filePath,
-        int fileNameStart,
-        int fileNameLength,
-        int lineNumber,
-        bool hasMemberName,
-        bool hasFileName,
-        bool includeLineNumber)
-    {
-        public readonly string Message = message;
-        public readonly string? MemberName = memberName;
-        public readonly string? FilePath = filePath;
-        public readonly int FileNameStart = fileNameStart;
-        public readonly int FileNameLength = fileNameLength;
-        public readonly int LineNumber = lineNumber;
-        public readonly bool HasMemberName = hasMemberName;
-        public readonly bool HasFileName = hasFileName;
-        public readonly bool IncludeLineNumber = includeLineNumber;
-    }
-
     /// <summary>
     /// Recursively gets all inner errors in the error chain as a flat list (excluding the current error itself).
     /// </summary>
@@ -460,10 +397,10 @@ public readonly record struct Error
     private IReadOnlyList<Error> FlattenInnerErrors()
     {
         if (!this.IsError) return [];
-        if (this.innerErrors is null) return [];
+        if (this._innerErrors is null) return [];
 
         List<Error> flatList = [];
-        CollectErrorsRecursively(this.innerErrors, flatList);
+        CollectErrorsRecursively(this._innerErrors, flatList);
         return flatList;
     }
 
@@ -479,9 +416,9 @@ public readonly record struct Error
         {
             collection.Add(error);
 
-            if (error.innerErrors is not null)
+            if (error._innerErrors is not null)
             {
-                CollectErrorsRecursively(error.innerErrors, collection);
+                CollectErrorsRecursively(error._innerErrors, collection);
             }
         }
     }
@@ -498,9 +435,9 @@ public readonly record struct Error
                 hasLine = true;
             }
 
-            if (error.innerErrors is not null)
+            if (error._innerErrors is not null)
             {
-                AppendStack(error.innerErrors, builder, ref hasLine);
+                AppendStack(error._innerErrors, builder, ref hasLine);
             }
         }
     }
@@ -518,12 +455,12 @@ public readonly record struct Error
     {
         if (!this.IsError && !target.IsError) return true;
         if (!this.IsError || !target.IsError) return false;
-        if (this.state == ErrorState.Default && target.state == ErrorState.Default) return true;
+        if (this._state == ErrorState.Default && target._state == ErrorState.Default) return true;
 
         if (this.Message.Equals(target.Message, StringComparison.Ordinal))
             return true;
 
-        foreach (var innerError in innerErrors ?? [])
+        foreach (var innerError in _innerErrors ?? [])
             if (innerError.Is(target)) return true;
 
         return false;
@@ -547,7 +484,7 @@ public readonly record struct Error
 
         if (!this.IsError) return false;
         if (!target.IsError) return false;
-        if (this.state == ErrorState.Default && target.state == ErrorState.Default)
+        if (this._state == ErrorState.Default && target._state == ErrorState.Default)
         {
             match = this;
             return true;
@@ -559,7 +496,7 @@ public readonly record struct Error
             return true;
         }
 
-        foreach (var innerError in innerErrors ?? [])
+        foreach (var innerError in _innerErrors ?? [])
         {
             if (innerError.As(target, out match)) return true;
         }

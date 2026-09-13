@@ -17,6 +17,13 @@ public class ErrorToStringTests
     }
 
     [Fact]
+    public void Error_ToString_WithNullMessage_ReturnsDefaultErrorMessageAndSourceLocationInfo()
+    {
+        var err = new Error(memberName: "DoWork", filePath: @"C:\\src\\Errgo\\Error.cs", lineNumber: 42);
+        Assert.Equal("Unknown error at DoWork in Error.cs:line 42", err.ToString());
+    }
+
+    [Fact]
     public void Error_ToString_WithMemberNameFilePathAndLineNumber_ReturnsFullDetails()
     {
         var err = new Error("Failed", memberName: "DoWork", filePath: @"C:\\src\\Errgo\\Error.cs", lineNumber: 42);
