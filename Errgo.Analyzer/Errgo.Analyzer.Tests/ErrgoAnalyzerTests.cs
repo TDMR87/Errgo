@@ -1,6 +1,5 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.CSharp.Testing;
 
 namespace Errgo.Analyzer.Tests;
 
@@ -9,9 +8,10 @@ public class ErrgoAnalyzerTests
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedInNextStatement()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
-            
+
             namespace TestNamespace
             {
                 class TestClass
@@ -29,14 +29,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -52,23 +51,23 @@ public class ErrgoAnalyzerTests
                     }
                 }
             }
-            """);
-
-        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            """, 
+            expected: new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
             .WithSpan(
                 startLine: 11, 
                 startColumn: 17, 
                 endLine: 11, 
                 endColumn: 20)
             .WithArguments("err"));
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked_Tuple()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -84,23 +83,23 @@ public class ErrgoAnalyzerTests
                     }
                 }
             }
-            """);
-
-        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            """,
+            expected: new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
             .WithSpan(
                 startLine: 11,
                 startColumn: 27,
                 endLine: 11,
                 endColumn: 30)
             .WithArguments("err"));
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked_Tuple2()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -116,23 +115,23 @@ public class ErrgoAnalyzerTests
                     }
                 }
             }
-            """);
-
-        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            """,
+            expected: new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
             .WithSpan(
-                startLine: 11,
-                startColumn: 23,
-                endLine: 11,
+                startLine: 11, 
+                startColumn: 23, 
+                endLine: 11, 
                 endColumn: 26)
             .WithArguments("err"));
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenErrorIsNotChecked_Tuple3()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -154,23 +153,23 @@ public class ErrgoAnalyzerTests
                     }
                 }
             }
-            """);
-
-        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            """,
+            expected: new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
             .WithSpan(
-                startLine: 17,
-                startColumn: 19,
-                endLine: 17,
+                startLine: 17, 
+                startColumn: 19, 
+                endLine: 17, 
                 endColumn: 22)
             .WithArguments("err"));
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenErrorIsCheckedButNotInNextStatement()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -190,23 +189,23 @@ public class ErrgoAnalyzerTests
                     }
                 }
             }
-            """);
-
-        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            """,
+            expected: new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
             .WithSpan(
                 startLine: 11, 
                 startColumn: 17, 
                 endLine: 11, 
                 endColumn: 20)
             .WithArguments("err"));
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithNegation()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -226,14 +225,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithComparison()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -253,14 +251,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsCheckedWithNotEqual()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -280,14 +277,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsNotFromMethodCall()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -302,14 +298,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorNone()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -324,14 +319,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorEmpty()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -346,14 +340,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorIsLastStatementInVoidMethod()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -369,14 +362,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WithMultipleErrors_AllUnchecked()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -395,32 +387,32 @@ public class ErrgoAnalyzerTests
                     }
                 }
             }
-            """);
-
-        test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            """,
+            new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
                 .WithSpan(
                     startLine: 11, 
                     startColumn: 17, 
                     endLine: 11, 
                     endColumn: 21)
-                .WithArguments("err1"));
-
-        test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+                .WithArguments("err1"),
+            new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
                 .WithSpan(
                     startLine: 14, 
                     startColumn: 17, 
                     endLine: 14, 
                     endColumn: 21)
                 .WithArguments("err2"));
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenChecked_WithExplicitErrorType()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -440,14 +432,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenVariableHasNoInitializer()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -462,14 +453,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task NoDiagnostic_WhenErrorInComplexCondition()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
 
             namespace TestNamespace
@@ -489,14 +479,13 @@ public class ErrgoAnalyzerTests
                 }
             }
             """);
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenAwaitedErrorIsNotChecked()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
             using System.Threading.Tasks;
 
@@ -513,23 +502,23 @@ public class ErrgoAnalyzerTests
                     }
                 }
             }
-            """);
-
-        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            """,
+            expected: new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
             .WithSpan(
                 startLine: 12,
                 startColumn: 17,
                 endLine: 12,
                 endColumn: 20)
             .WithArguments("err"));
-
-        await test.RunAsync();
     }
 
     [Fact]
     public async Task Diagnostic_WhenAwaitedTupleErrorIsNotChecked()
     {
-        var test = CreateTest(/* lang=c#-test */"""
+        await ErrgoVerifier.VerifyAnalyzerAsync(/* lang=c#-test */
+            """
             using Errgo;
             using System.Threading.Tasks;
 
@@ -546,31 +535,15 @@ public class ErrgoAnalyzerTests
                     }
                 }
             }
-            """);
-
-        test.ExpectedDiagnostics.Add(new DiagnosticResult("ERRGO001", DiagnosticSeverity.Warning)
+            """,
+            expected: new DiagnosticResult(
+                ErrgoAnalyzer.DiagnosticId, 
+                DiagnosticSeverity.Warning)
             .WithSpan(
                 startLine: 12,
                 startColumn: 24,
                 endLine: 12,
                 endColumn: 27)
             .WithArguments("err"));
-
-        await test.RunAsync();
-    }
-
-    private static readonly ReferenceAssemblies ReferenceAssemblies = ReferenceAssemblies.Net.Net80;
-
-    private static CSharpAnalyzerTest<ErrgoAnalyzer, Microsoft.CodeAnalysis.Testing.Verifiers.XUnitVerifier> CreateTest(string code)
-    {
-        var test = new CSharpAnalyzerTest<ErrgoAnalyzer, Microsoft.CodeAnalysis.Testing.Verifiers.XUnitVerifier>
-        {
-            TestCode = code,
-            ReferenceAssemblies = ReferenceAssemblies,
-        };
-
-        test.TestState.AdditionalReferences.Add(typeof(Error).Assembly);
-
-        return test;
     }
 }
