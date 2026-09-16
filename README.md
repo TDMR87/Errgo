@@ -48,7 +48,7 @@ public (Weather, Error) GetTodaysWeather()
 }
 ```
 
-> NOTE: Checking the returned error can be enforced by installing the [Errgo.Analyzer](https://www.nuget.org/packages/Errgo.Analyzer/0.1.0-alpha) package. Never let errors go unhandled!
+> NOTE: Checking the returned error can be enforced by installing the [Errgo.Analyzer](https://www.nuget.org/packages/Errgo.Analyzer/0.1.0-alpha) package. Never let errors go unchecked!
 
 ![analyzer](./img/errgo_analyzer.gif)
 
