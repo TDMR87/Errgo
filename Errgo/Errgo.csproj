@@ -18,7 +18,6 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
     <PackageIcon>errgo_logo_sm.png</PackageIcon>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
   </PropertyGroup>
 
