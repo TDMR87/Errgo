@@ -9,25 +9,23 @@ dotnet add package Errgo
 
 ## Quick Start
 
-```csharp
-using Errgo;
-```
+The Errgo library contains only one type: `Error`
 
-With traditional result-pattern libraries you usually use a generic Result<T> type to wrap the actual result and/or a possible error(s), something like:
+With traditional result-pattern libraries you usually use some kinda of generic Result<T> type to wrap the actual result and/or a possible error(s), something like:
 
 ```
 public Result<WeatherForecast> GetWeather() { }
 ```
 
-With `Errgo` you don't use wrapper classes. Your functions simply return the _actual_ result and an error as a .NET tuple, for example:
+With `Errgo` you don't use wrapper classes. Your functions are supposed to *explicitly* return the return type _and_ an error, as a .NET C# tuple:
 
 ```csharp
 public (WeatherForecast, Error) GetWeather() { }
 ```
 
-That's it. You just return what you want and an error. The `Error` type is the only public type in the Errgo library.
+That's it. You just return the _thing_ and an _error_.
 
-The call-site is required to check the returned error and if the calling function uses the same tuple return pattern, it can either just return the same error:
+The call-site is required to check the returned error and if the calling function uses the same tuple return pattern, it can choose to just return the same error:
 
 ```csharp
 public (SomeOtherType, Error) SomeOtherFunction() 
@@ -44,8 +42,9 @@ public (SomeOtherType, Error) SomeOtherFunction()
 public (SomeOtherType, Error) SomeOtherFunction() 
 { 
 	var (weather, err) = GetWeather();
-	if (err) return (null, new Error("SomeOtherFunction failed", err)); // <-- Wrap the error another error
-	// ...
+
+	// Wrap the error within another error
+	if (err) return (null, new Error("SomeOtherFunction failed", err)); 
 }
 ```
 
@@ -53,7 +52,7 @@ public (SomeOtherType, Error) SomeOtherFunction()
 
 ![analyzer](./img/errgo_analyzer.gif)
 
-## More Features
+## Features
 
 ### Message:` string`
 `Message` contains the given message of the error (or a default message if not specified)
@@ -87,20 +86,21 @@ Connection timeout at GetWeather in WeatherService.cs:line 33
   Connection timeout at SomeFunction in SomeSourceFile.cs:line 17
 
 ### Sentinel errors
-Create commonly known re-usable errors. Sentinel errors do not contain source location info, so wrap them in other Errors for better context
+Sentinel errors are pre-defined errors. They do not contain source location info, so wrap them in other Errors for better context.
 ```csharp
 	public static readonly Error NotFound = Error.Sentinel("Not found");
-	public static readonly Error ConnectionTimeout = Error.Sentinel("Connection timed out");
 
 	// Wrap in another error
-	return new Error($"Fetching user with id {id} failed", NotFound);
+	var err = new Error($"Fetching user with id {id} failed", NotFound);
+
+	Console.WriteLine(err.Stack);
 ```
 > Output:\
 	Fetching user with id 123 failed at SomeFunction in SomeSourceFile.cs:line 19\
 	Not found
 
 ### Pattern matching: Error.Is()
-`Is()` checks if this error or any error in its inner errors matches the target error. Good for matching against known errors.
+`Is()` checks if this error or any error in its inner errors matches the target error. Good for matching against sentinel errors.
 ```csharp
 	public static readonly Error NotFound = Error.Sentinel("Not found");
 	public static readonly Error ConnectionTimeout = Error.Sentinel("Connection timed out");
@@ -113,18 +113,47 @@ Create commonly known re-usable errors. Sentinel errors do not contain source lo
 ### Pattern matching: Error.As()
 `As()` attempts to find an error in the inner error chain that matches the target error and extracts the matched error.
 ```csharp
-	Assert.True(err.As(NotFoundError, out var matchedError)); // True
-	Assert.Equal(NotFoundError, matchedError); // True
+	if (err.As(NotFoundError, out var matchedError)) 
+	{
+		Assert.Equal(NotFoundError, matchedError); // True
+	}
 ```
 
 ### Error.Join()
-`Join()` combines the given errors, returning a new Error where the given Errors are the new Error's inner errors.
+`Join()` combines the given errors, returning a new Error where the specified Errors are the returned Error's inner errors.
 ```csharp
 	var oneErrToRuleThemAll = Error.Join(err1, err2, err3, err4, ...);
 ```
 
+### Error.None
+`Error.None` is the canonical non-error, meant to be returned on success paths. Due to the implicit bool operator of the Error type, Error.None values resolve to `false` while every other Error resolves to true.
+```csharp
+	var err = Error.None;
+	if (err) { ... } // The code inside the if-statement will not be reached
+```
+
+### Error.Empty
+`Error.Empty` does not contain a message and no source location information.
+```csharp
+	var errors = Error.Empty;
+
+	var err = ValidateEmail(...);
+	if (err) errors = Error.Join(errors, err);
+
+	(isValid, err) = ValidateAge(...);
+	if (err) errors = Error.Join(errors, err);
+
+	(isValid, err) = ValidateUsername(...);
+	if (err) errors = Error.Join(errors, err);
+
+	if (errors)
+	{
+		Console.WriteLine(errors.Stack);
+	}
+```
+
 ### Performance
-`Error` is a struct and therefore designed to be somewhat lightweight and reduce GC pressure. Here's some benchmark numbers. 
+`Error` is a struct and therefore somewhat lightweight, reducing heap allocations and GC pressure. Here's some benchmark numbers. 
 ![benchmarks](./img/errgo_benchmarks.png)
 >The benchmark code can be found in `Erggo.Benchmarks` directory. 
 
