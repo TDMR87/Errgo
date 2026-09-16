@@ -9,7 +9,6 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>Errgo</PackageId>
-    <Version>0.1.0-alpha</Version>
     <Authors>Diego Rönkkömäki-Tapia</Authors>
     <Description>Errors-as-values in C#</Description>
     <PackageTags>errgo, error-handling, errors, error, result, result pattern, go, gostyle, csharp, dotnet, netstandard, no-exceptions</PackageTags>
