@@ -9,7 +9,6 @@
 
   <PropertyGroup>
     <PackageId>Errgo.Analyzer</PackageId>
-    <PackageVersion>0.1.0-alpha</PackageVersion>
     <Authors>Diego Rönkkömäki-Tapia</Authors>
     <PackageProjectUrl>https://github.com/TDMR87/Errgo</PackageProjectUrl>
     <RepositoryUrl>https://github.com/TDMR87/Errgo</RepositoryUrl>
