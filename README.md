@@ -11,7 +11,7 @@ dotnet add package Errgo
 
 The Errgo library contains only one type: `Error`
 
-With traditional result-pattern libraries you usually use some kinda of generic Result<T> type to wrap the actual result and/or a possible error(s), something like:
+With traditional result-pattern libraries you usually use some kind of generic Result<T> type to wrap the actual result and/or a possible error(s), something like:
 
 ```
 public Result<WeatherForecast> GetWeather() { }
@@ -32,19 +32,19 @@ public (SomeOtherType, Error) SomeOtherFunction()
 { 
 	var (weather, err) = GetWeather();
 	if (err) return (null, err); // <-- Return the same error
-	else return (SomeOtherType, Error.None); // <-- built-in Error value that indicates success
+	else return (SomeOtherType, Error.None);
 }
 ```
 
 ...or you can wrap the error within another Error to give the error more context to the next call-site:
 
 ```csharp
-public (SomeOtherType, Error) SomeOtherFunction() 
+public (Weather, Error) GetTodaysWeather() 
 { 
-	var (weather, err) = GetWeather();
+	var (weather, err) = weatherService.GetWeather(DateTime.Now);
 
 	// Wrap the error within another error
-	if (err) return (null, new Error("SomeOtherFunction failed", err)); 
+	if (err) return (null, new Error("GetTodaysWeather failed", err)); 
 }
 ```
 
